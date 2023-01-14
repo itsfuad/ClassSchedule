@@ -2,9 +2,12 @@
 // @ts-nocheck
 
 import { onMount } from 'svelte';
-import { COURSES } from './courses.js';
+import { COURSES, titleCase } from './courses.js';
+import { ROOMS } from './rooms.js';
 
 console.log('%cmain.js loaded', 'color: green;');
+
+let READY = false;
 
 onMount(() => {
   console.log('%cApp mounted', 'color: green;');
@@ -29,10 +32,32 @@ onMount(() => {
       if (!selectedDay){
         errLog('Please select a day');
         return;
+      }else{
+        const temp = titleCase(selectedDay);
+        if (!days.includes(temp)){
+          errLog('Please select a valid day');
+          return;
+        }
       }
       if (!selectedCourse){
         errLog('Please select a course');
         return;
+      }else{
+        const temp = titleCase(selectedCourse);
+        if (!COURSES.includes(temp)){
+          errLog('Please select a valid course');
+          return;
+        }
+      }
+      if (!selectedRoom){
+        errLog('Please select a room');
+        return;
+      }else{
+        const temp = selectedRoom;
+        if (!ROOMS.includes(temp)){
+          errLog('Please select a valid room');
+          return;
+        }
       }
       if (!selectedTimeStart){
         errLog('Please select a start time');
@@ -84,22 +109,37 @@ onMount(() => {
       }
 
       if (!error){
-        data[selectedDay] = {};
-        data[selectedDay][time] = selectedCourse;
+        if (!data[selectedDay]){
+          data[selectedDay] = {};
+        }
+        data[selectedDay][time] = [selectedCourse, selectedRoom];
       }
 
       if (!error){
         //update the display
-        addedCourseDisplay += `<li class="course" data-day="${selectedDay}" data-time="${time}">${selectedCourse} on ${selectedDay} from ${selectedTimeStart} to ${selectedTimeEnd} <i class="fa-solid fa-trash delete-btn" title="Delete course"></i><li>`;
-        if (Object.keys(data).length == 4){
-          loadData();
-        }
+       
+        const li = document.createElement('li');
+        li.classList.add('course');
+        li.setAttribute('data-day', selectedDay);
+        li.setAttribute('data-time', time);
+
+        const deleteBtn = document.createElement('i');
+        deleteBtn.classList.add('fa-solid', 'fa-trash', 'delete-btn');
+        deleteBtn.setAttribute('title', 'Delete course');
+        deleteBtn.style.color = 'indianred';
+        deleteBtn.style.padding = '0 5px';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.fontSize = '0.9rem';
+
+        li.textContent = `${selectedCourse} | ${selectedDay} [${timeConverter(time)}][${selectedRoom}]`;
+        li.appendChild(deleteBtn);
+
+        coursesAddedList.appendChild(li);
       }else{
         console.log('%cError adding course', 'color: red;');
       }
     }
   }
-
 });
 
 /**
@@ -118,8 +158,26 @@ function timeParser(time){
   return [timeStartValue, timeEndValue];
 }
 
+//24h to 12h time
+/**
+ * @param {string} time
+ * @returns {string}
+ */
+function timeConverter(time){
+  if (!time){
+    return '';
+  }
+  const timeRange = time.split('-');
+  const timeStart = timeRange[0].trim().split(':');
+  const timeStartValue = parseInt(timeStart[0])*60 + parseInt(timeStart[1]);
+  const timeEnd = timeRange[1].trim().split(':');
+  const timeEndValue = parseInt(timeEnd[0])*60 + parseInt(timeEnd[1]);
+  const timeStart12h = timeStartValue < 720 ? `${timeStart[0]}:${timeStart[1]} AM` : `${timeStart[0] == 12 ? timeStart[0] : timeStart[0]-12}:${timeStart[1]} PM`;
+  const timeEnd12h = timeEndValue < 720 ? `${timeEnd[0]}:${timeEnd[1]} AM` : `${timeEnd[0] == 12 ? timeEnd[0] : timeEnd[0]-12}:${timeEnd[1]} PM`;
+  return `${timeStart12h} - ${timeEnd12h}`;
+}
+
 let addCourse;
-let addedCourseDisplay = '';
 let errorText, errorClass = '';
 
 let charts;
@@ -154,6 +212,10 @@ if (document.body.clientHeight > document.body.clientWidth){
 const font_size = canvasSize/15;
 
 function loadData(){
+  if (Object.keys(data).length < 4){
+    errLog('Please complete the form');
+    return;
+  }
   if (!localStorage.getItem('data')){
     localStorage.setItem('data', JSON.stringify(data));
     console.log('%cData saved', 'color: deepskyblue;');
@@ -168,6 +230,7 @@ function loadData(){
 function init(){
 
     console.log('%cInitializing Charts', 'color: deepskyblue;');
+    READY = true;
 
     Object.keys(data).forEach(day => {
 
@@ -218,18 +281,6 @@ function errLog(err){
 }
 
 /**
- * @param {string} str
- * @returns {string}
- */
-function titleCase(str) {
-  str = str.toLowerCase().split(' ');
-  for (var i = 0; i < str.length; i++) {
-    str[i] = str[i].charAt(0).toUpperCase() + str[i].slice(1); 
-  }
-  return str.join(' ');
-}
-
-/**
  * @param {string} day
  * @param {string} time
  * @param {CanvasRenderingContext2D} ctx
@@ -239,11 +290,12 @@ function titleCase(str) {
  */
 function draw(day, time, ctx, xCord, yCord, radius){
 
-    const course = titleCase(data[day][time]);
+    const courseInfo = data[day][time];
+    const courseName = courseInfo[0];
 
-    if (!colors[course]){
+    if (!colors[courseName]){
         const color = chooseColor();
-        colors[course] = color;
+        colors[courseName] = color;
     }
 
     //extract the start time and end time from '1:00 PM - 2:15 PM' format
@@ -265,8 +317,8 @@ function draw(day, time, ctx, xCord, yCord, radius){
 
     //run writeLabel function after all fillTimeClock functions are done
    
-    fillTimeClock(startAngle, endAngle, colors[course], ctx, xCord, yCord, radius);
-    writeLabel(course, timeRange, startAngle, endAngle, ctx, xCord, yCord, radius);
+    fillTimeClock(startAngle, endAngle, colors[courseName], ctx, xCord, yCord, radius);
+    writeLabel(courseInfo, timeRange, startAngle, endAngle, ctx, xCord, yCord, radius);
 }
 
 /**
@@ -307,13 +359,13 @@ function fillTimeClock(startAngle, endAngle, color, ctx, xCord, yCord, radius) {
  * @param {number} yCord
  * @param {number} radius
  */
-function writeLabel(courseName, Time, startAngle, endAngle, ctx, xCord, yCord, radius) {
+function writeLabel(courseInfo, Time, startAngle, endAngle, ctx, xCord, yCord, radius) {
     ctx.fillStyle = '#bdf';
     ctx.font = `${font_size/2.5}px Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText(courseName[0], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2));
-    if (courseName[1]){
-        ctx.fillText(courseName[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
+    ctx.fillText(courseInfo[0], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2));
+    if (courseInfo[1]){
+        ctx.fillText(courseInfo[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
         ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 30);
     }else{
         ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
@@ -326,53 +378,120 @@ function reset(){
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday'];
 
-let selectedCourse, selectedDay, selectedTimeStart, selectedTimeEnd;
+let selectedCourse, selectedDay, selectedRoom, selectedTimeStart, selectedTimeEnd;
+
+let coursesAddedList;
+
+function handleDeleteCourse(evt){
+  //if the target is not the ul element
+  if (evt.target == coursesAddedList){
+    return;
+  }
+  const course = evt.target?.closest('.course');
+  if (course){
+    const day = course.dataset.day;
+    const time = course.dataset.time;
+    if (data[day]){
+      course.remove();
+      course.remove();
+      delete data[day][time];
+      if (Object.keys(data[day]).length == 0){
+        delete data[day];
+      }
+      console.log('%cCourse Deleted', 'color: red;');
+    }
+  }
+}
 
 </script>
 
 <div id="charts" bind:this={charts}></div>
 
-{#if Object.entries(data).length < 4}
+{#if !READY}
   <div id="coursesDisplay">
-    <ul class="courses">{@html addedCourseDisplay}</ul>
-    <label for="coursesDisplay" id="clb">Added Courses</label>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <ul class="courses" bind:this={coursesAddedList} on:click={handleDeleteCourse}></ul>
+    <label for="coursesDisplay" id="clb">Added Courses <i class="fa-solid fa-puzzle-piece"></i></label>
   </div>
   <div class="form">
+
     <div class="errLog {errorClass}">{errorText}</div>
     <div class="title mid">Select your courses and times <i class="fa-solid fa-calendar-days"></i></div>
+    
     <div class="form-field">
-      <select name="day" id="day" bind:value={selectedDay} on:change={reset}>
-        <option value> - Select Day - </option>
+      <input list="day" class="dropdown-list" bind:value={selectedDay} on:change={reset} placeholder=" - Select day - ">
+      <datalist name="day" id="day">
         {#each days as day}
-          <option value={day}>{day}</option>
+          <option class="list-item" value={day}>{day}</option>
         {/each}
-      </select>
+      </datalist>
     </div>
+
     <div class="form-field">
-      <select name="course" id="course" bind:value={selectedCourse} on:change={reset}>
-        <option value> - Select Courses - </option>
+      <input list="course" class="dropdown-list" bind:value={selectedCourse} on:change={reset} placeholder=" - Select course - ">
+      <datalist name="course" id="course">
         {#each COURSES as course}
-          <option value={course}>{course}</option>
+          <option class="list-item" value={course}>{course}</option>
         {/each}
-      </select>
+      </datalist>
     </div>
+
+    <div class="form-field">
+      <input list="room" class="dropdown-list" bind:value={selectedRoom} on:change={reset} placeholder=" - Select room - ">
+      <datalist name="room" id="room">
+        {#each ROOMS as room}
+          <option class="list-item" value={room}>{room}</option>
+        {/each}
+      </datalist>
+    </div>
+
     <div class="form-group backgound padding">
+
       <div class="form-field">
         <label for="time" class="title small">Class starts</label>
         <input type="time" name="courseTime" id="time-start" bind:value={selectedTimeStart} on:change={reset}>
       </div>
+
       <div class="form-field">
         <label for="time" class="title small">Class ends</label>
         <input type="time" name="courseTime" id="time-end" bind:value={selectedTimeEnd} on:change={reset}>
       </div>
+
     </div>
+
     <div class="form-group">
       <button class="addButton" on:click={addCourse}>Add <i class="fa-solid fa-circle-plus"></i></button>
+      <button class="clear" on:click={() => {
+          selectedDay = '';
+          selectedCourse = '';
+          selectedTimeStart = '';
+          selectedTimeEnd = '';
+      }}>Clear</button>
+      <button class="finishButton" on:click={loadData}>Finish <i class="fa-solid fa-check"></i></button>
     </div>
-  </div>
-{/if}
 
-<footer>&copy; Fuad Hasan</footer>
+  </div>
+  <footer>&copy; Fuad Hasan</footer>
+{:else}
+  <button class="clear reset" on:click={() => {
+
+    while (charts.firstChild) {
+      charts.removeChild(charts.firstChild);
+    }
+
+    selectedDay = '';
+    selectedCourse = '';
+    selectedTimeStart = '';
+    selectedTimeEnd = '';
+
+    data = {};
+
+    localStorage.removeItem('data');
+
+    READY = false;
+
+  }}>Clear Data</button>
+{/if}
 
 <style>
 
@@ -476,7 +595,8 @@ let selectedCourse, selectedDay, selectedTimeStart, selectedTimeEnd;
     margin-top: 10px;
     padding: 10px;
   }
-  .form-field select{
+
+  .dropdown-list{
     width: 100%;
     padding: 5px;
     background: rgb(26, 121, 209);
@@ -484,14 +604,21 @@ let selectedCourse, selectedDay, selectedTimeStart, selectedTimeEnd;
     outline: none;
     border: none;
     border-radius: 5px;
+    text-align: center;
   }
-  .form-field option{
+
+  ::placeholder{
+    color: #f0f8ff6e;
+  }
+
+  .list-item{
     background: rgb(26, 121, 209);
     color: white;
     border: none;
     outline: none;
     padding: 5px;
   }
+
   input[type='time']{
     padding: 5px;
     background: rgb(26, 121, 209);
@@ -504,6 +631,11 @@ let selectedCourse, selectedDay, selectedTimeStart, selectedTimeEnd;
   input[type='time']::-webkit-calendar-picker-indicator {
     filter: invert(1);
   }
+
+  ::selection{
+    background: rgba(0, 240, 140, 0.651);
+  }
+
   .title.small{
     font-size: 0.8rem;
   }

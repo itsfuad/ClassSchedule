@@ -487,4 +487,17 @@ export const COURSES = [
 'WORKING DRAWING I : CONST. DRAWING',
 'WORKING DRAWING II: PRODUCTION DRAWING',
 'WRITING FOR ARTS AND SOCIAL SCIENCES',
-];
+].map(item => titleCase(item));
+
+
+/**
+ * @param {string} str
+ * @returns {string}
+ */
+export function titleCase(str) {
+    const temp = str.toLowerCase().split(' ');
+    for (var i = 0; i < temp.length; i++) {
+        temp[i] = temp[i].charAt(0).toUpperCase() + temp[i].slice(1); 
+    }
+    return temp.join(' ');
+}

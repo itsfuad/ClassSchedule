@@ -79,6 +79,38 @@ button{
   }
 }
 
+.finishButton{
+  margin-top: 20px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 5px;
+  background: rgb(15, 196, 126);
+  color: aliceblue;
+  cursor: pointer;
+  &:hover{
+      background: rgb(10, 186, 116);
+  }
+}
+
+.clear{
+  margin-top: 20px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 5px;
+  background: rgb(226, 6, 6);
+  color: aliceblue;
+  cursor: pointer;
+  &:hover{
+      background: rgb(216, 0, 0);
+  }
+}
+
+.clear.reset{
+  margin: 20px;
+}
+
 footer{
   font-size: 0.6rem;
   position: fixed;
