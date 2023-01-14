@@ -169,11 +169,11 @@ function validateTimeClash(_data, day, timeStart, timeEnd){
 
       const [timeStartValue, timeEndValue] = timeParser(time);
 
-      if (timeStart >= timeStartValue && timeStart <= timeEndValue){
+      if (timeStart > timeStartValue && timeStart < timeEndValue){
         errLog('Time clash!');
         valid = false;
       }
-      if (timeEnd >= timeStartValue && timeEnd <= timeEndValue){
+      if (timeEnd > timeStartValue && timeEnd < timeEndValue){
         errLog('Time clash!');
         valid = false;
       }
