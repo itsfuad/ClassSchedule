@@ -372,6 +372,8 @@ let selectedCourse, selectedDay, selectedTimeStart, selectedTimeEnd;
   </div>
 {/if}
 
+<footer>&copy; Fuad Hasan</footer>
+
 <style>
 
   #coursesDisplay{

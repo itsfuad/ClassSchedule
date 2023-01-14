@@ -80,10 +80,11 @@ button:hover {
 
 footer {
   font-size: 0.6rem;
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  padding: 5px;
   text-align: center;
   z-index: 1;
 }/*# sourceMappingURL=app.css.map */
