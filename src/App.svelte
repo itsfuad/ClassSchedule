@@ -477,6 +477,10 @@ function validateData(data){
     if (valid){
       Object.keys(data[day]).forEach(time => {
 
+        if (!valid){
+          return;
+        }
+
         const timeStart = time.split('-')[0];
         const timeEnd = time.split('-')[1];
 
@@ -492,34 +496,36 @@ function validateData(data){
         */
 
         valid = validateTimeRange(convertedTimeStart, convertedTimeEnd);
+        if (!valid){
+          return;
+        }
         //console.log('time range: ' + valid);
 
-        if (valid){
-          const course = data[day][time];
-          if (!course){
+        const course = data[day][time];
+        if (!course){
+          valid = false;
+          console.log('%cNo Course', 'color: red;')
+          return;
+        }else{
+          if (!COURSES.includes(course[0])){
+            errLog(`Invalid Course: ${course[0]}`);
+            console.log('%cInvalid Course: ' + course[0], 'color: red;');
             valid = false;
-            console.log('%cNo Course', 'color: red;')
-          }else{
-            if (!COURSES.includes(course[0])){
-              errLog(`Invalid Course: ${course[0]}`);
-              console.log('%cInvalid Course: ' + course[0], 'color: red;');
-              valid = false;
-            }
+            return;
           }
+        }
 
-          if (valid){
+        valid = validateTimeClash(data, day, convertedTimeStart, convertedTimeEnd);
+        if (!valid){
+          return;
+        }
 
-            valid = validateTimeClash(data, day, convertedTimeStart, convertedTimeEnd);
-            //console.log('time clash: ' + valid)
-            if (valid){
-
-              if (!ROOMS.includes(course[1])){
-                errLog(`Invalid Room: ${course[1]}`);
-                console.log('%cInvalid Room: ' + course[1], 'color: red;');
-                valid = false;
-              }
-            }
-          }
+        //console.log('time clash: ' + valid)
+        if (!ROOMS.includes(course[1])){
+          errLog(`Invalid Room: ${course[1]}`);
+          console.log('%cInvalid Room: ' + course[1], 'color: red;');
+          valid = false;
+          return;
         }
       });
     }
