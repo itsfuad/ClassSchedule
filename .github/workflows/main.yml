@@ -1,0 +1,27 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: npm run build
+
+    - name: Copy to gh-pages branch
+      run: |
+        git branch -D gh-pages
+        git checkout -b gh-pages
+        rm -rf *
+        cp -r dist/* .
+        git add -A
+        git commit -m "Deploy to GitHub Pages"
+        git push origin gh-pages -f
