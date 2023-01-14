@@ -12,6 +12,103 @@ let READY = false;
 onMount(() => {
   console.log('%cApp mounted', 'color: green;');
 
+
+  addCourse = function(){
+    
+    if (!selectedDay){
+      errLog('Please select a day');
+      return;
+    }else{
+      const temp = titleCase(selectedDay);
+      if (!days.includes(temp)){
+        errLog('Please select a valid day');
+        return;
+      }
+    }
+    if (!selectedCourse){
+      errLog('Please select a course');
+      return;
+    }else{
+      const temp = titleCase(selectedCourse);
+      if (!COURSES.includes(temp)){
+        errLog('Please select a valid course');
+        return;
+      }
+    }
+    if (!selectedRoom){
+      errLog('Please select a room');
+      return;
+    }else{
+      const temp = selectedRoom;
+      if (!ROOMS.includes(temp)){
+        errLog('Please select a valid room');
+        return;
+      }
+    }
+    if (!selectedTimeStart){
+      errLog('Please select a start time');
+      return;
+    }
+    if (!selectedTimeEnd){
+      errLog('Please select an end time');
+      return;
+    }
+    
+    const [selectedTimeStartValue, selectedTimeEndValue] = timeParser(`${selectedTimeStart} - ${selectedTimeEnd}`);
+    
+    let valid = true;
+
+    valid = validateTimeRange(selectedTimeStartValue, selectedTimeEndValue);
+
+    if (!valid){
+      return;
+    }
+          
+    errorClass = '';
+
+    const time = `${selectedTimeStart} - ${selectedTimeEnd}`;
+
+    valid = validateTimeClash(data, selectedDay, selectedTimeStartValue, selectedTimeEndValue);
+
+    if (!valid){
+      return;
+    }
+
+    if (valid){
+      //update the display
+      
+      const li = document.createElement('li');
+      li.classList.add('course');
+      li.setAttribute('data-day', selectedDay);
+      li.setAttribute('data-time', time);
+
+      const deleteBtn = document.createElement('i');
+      deleteBtn.classList.add('fa-solid', 'fa-trash', 'delete-btn');
+      deleteBtn.setAttribute('title', 'Delete course');
+      deleteBtn.style.color = 'indianred';
+      deleteBtn.style.padding = '0 5px';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontSize = '0.9rem';
+
+      li.textContent = `${selectedCourse} | ${selectedDay} [${timeConverter(time)}][${selectedRoom}]`;
+      li.appendChild(deleteBtn);
+
+      coursesAddedList.appendChild(li);
+
+      if (!data[selectedDay]){
+        data[selectedDay] = {};
+      }
+
+      data[selectedDay][time] = [selectedCourse, selectedRoom];
+
+      console.log('%cCourse added', 'color: deepskyblue;');
+
+    }else{
+      console.log('%cError adding course', 'color: red;');
+    }
+  }
+
+
   const dataAvailable = localStorage.getItem('data');
   if (dataAvailable){
     const parsedData = JSON.parse(dataAvailable);
@@ -35,100 +132,6 @@ onMount(() => {
     console.log('%cNo data found', 'color: deepskyblue;');
     //change the title
     document.title = 'Select Courses';
-    addCourse = function(){
-      
-      if (!selectedDay){
-        errLog('Please select a day');
-        return;
-      }else{
-        const temp = titleCase(selectedDay);
-        if (!days.includes(temp)){
-          errLog('Please select a valid day');
-          return;
-        }
-      }
-      if (!selectedCourse){
-        errLog('Please select a course');
-        return;
-      }else{
-        const temp = titleCase(selectedCourse);
-        if (!COURSES.includes(temp)){
-          errLog('Please select a valid course');
-          return;
-        }
-      }
-      if (!selectedRoom){
-        errLog('Please select a room');
-        return;
-      }else{
-        const temp = selectedRoom;
-        if (!ROOMS.includes(temp)){
-          errLog('Please select a valid room');
-          return;
-        }
-      }
-      if (!selectedTimeStart){
-        errLog('Please select a start time');
-        return;
-      }
-      if (!selectedTimeEnd){
-        errLog('Please select an end time');
-        return;
-      }
-      
-      const [selectedTimeStartValue, selectedTimeEndValue] = timeParser(`${selectedTimeStart} - ${selectedTimeEnd}`);
-      
-      let valid = true;
-
-      valid = validateTimeRange(selectedTimeStartValue, selectedTimeEndValue);
-
-      if (!valid){
-        return;
-      }
-            
-      errorClass = '';
-
-      const time = `${selectedTimeStart} - ${selectedTimeEnd}`;
-
-      valid = validateTimeClash(data, selectedDay, selectedTimeStartValue, selectedTimeEndValue);
-
-      if (!valid){
-        return;
-      }
-
-      if (valid){
-        //update the display
-       
-        const li = document.createElement('li');
-        li.classList.add('course');
-        li.setAttribute('data-day', selectedDay);
-        li.setAttribute('data-time', time);
-
-        const deleteBtn = document.createElement('i');
-        deleteBtn.classList.add('fa-solid', 'fa-trash', 'delete-btn');
-        deleteBtn.setAttribute('title', 'Delete course');
-        deleteBtn.style.color = 'indianred';
-        deleteBtn.style.padding = '0 5px';
-        deleteBtn.style.cursor = 'pointer';
-        deleteBtn.style.fontSize = '0.9rem';
-
-        li.textContent = `${selectedCourse} | ${selectedDay} [${timeConverter(time)}][${selectedRoom}]`;
-        li.appendChild(deleteBtn);
-
-        coursesAddedList.appendChild(li);
-
-        if (!data[selectedDay]){
-          data[selectedDay] = {};
-        }
-
-        data[selectedDay][time] = [selectedCourse, selectedRoom];
-
-        console.log('%cCourse added', 'color: deepskyblue;');
-
-      }else{
-        console.log('%cError adding course', 'color: red;');
-      }
-    }
   }
 });
 
