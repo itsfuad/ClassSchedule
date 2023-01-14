@@ -16,11 +16,19 @@ onMount(() => {
   if (dataAvailable){
     const parsedData = JSON.parse(dataAvailable);
     if (Object.keys(parsedData).length == 4){
-      data = parsedData;
-      console.log('%cData loaded', 'color: deepskyblue;');
-      loadData();
+      if (validateData(parsedData)){
+        console.log('%cData loaded', 'color: deepskyblue;');
+        data = parsedData;
+        loadData();
+      }else{
+        console.log('%cInvalid data found', 'color: red;');
+        localStorage.removeItem('data');
+        data = {};
+      }
     }else{
       console.log('%cInvalid data found', 'color: red;');
+      localStorage.removeItem('data');
+      data = {};
     }
 
   }else{
@@ -70,52 +78,25 @@ onMount(() => {
       
       const [selectedTimeStartValue, selectedTimeEndValue] = timeParser(`${selectedTimeStart} - ${selectedTimeEnd}`);
       
-      if (selectedTimeStartValue >= selectedTimeEndValue){
-        errLog('Start time must be before end time');
+      let valid = true;
+
+      valid = validateTimeRange(selectedTimeStartValue, selectedTimeEndValue);
+
+      if (!valid){
         return;
       }
-      if (selectedTimeStartValue == selectedTimeEndValue){
-        errLog('Start time and end time cannot be the same');
-        return;
-      }
-      if (selectedTimeStartValue < 480 || selectedTimeStartValue > 1080){
-        errLog('Start time must be between 8:00 AM and 6:00 PM');
-        return;
-      }
-      
+            
       errorClass = '';
 
       const time = `${selectedTimeStart} - ${selectedTimeEnd}`;
 
-      let error = false;
+      valid = validateTimeClash(data, selectedDay, selectedTimeStartValue, selectedTimeEndValue);
 
-      if (data[selectedDay]){
-        //get time range from data to see if it overlaps with any other time range
-        Object.keys(data[selectedDay]).forEach(time => {
-
-          const [timeStartValue, timeEndValue] = timeParser(time);
-
-          if (selectedTimeStartValue >= timeStartValue && selectedTimeStartValue <= timeEndValue){
-            errLog('Time range overlaps with another time range');
-            error = true;
-            return;
-          }
-          if (selectedTimeEndValue >= timeStartValue && selectedTimeEndValue <= timeEndValue){
-            errLog('Time range overlaps with another time range');
-            error = true;
-            return;
-          }
-        });
+      if (!valid){
+        return;
       }
 
-      if (!error){
-        if (!data[selectedDay]){
-          data[selectedDay] = {};
-        }
-        data[selectedDay][time] = [selectedCourse, selectedRoom];
-      }
-
-      if (!error){
+      if (valid){
         //update the display
        
         const li = document.createElement('li');
@@ -135,12 +116,69 @@ onMount(() => {
         li.appendChild(deleteBtn);
 
         coursesAddedList.appendChild(li);
+
+        if (!data[selectedDay]){
+          data[selectedDay] = {};
+        }
+
+        data[selectedDay][time] = [selectedCourse, selectedRoom];
+
+        console.log('%cCourse added', 'color: deepskyblue;');
+
       }else{
         console.log('%cError adding course', 'color: red;');
       }
     }
   }
 });
+
+
+function validateTimeRange(start, end){
+  if (start >= end){
+    errLog('Start time must be before end time');
+    console.log('%cStart time must be before end time', 'color: red;');
+    //console.log('%cStart time: ' + start, 'color: orangered;');
+    //console.log('%cEnd time: ' + end, 'color: orangered;');
+    return false;
+  }
+  if (start == end){
+    errLog('Start time and end time cannot be the same');
+    console.log('%cStart time and end time cannot be the same', 'color: red;');
+    //console.log('%cStart time: ' + start, 'color: orangered;');
+    //console.log('%cEnd time: ' + end, 'color: orangered;');
+    return false;
+  }
+  if (start < 480 || start > 1080){
+    errLog('Start time must be between 8:00 AM and 6:00 PM');
+    console.log('%cStart time must be between 8:00 AM and 6:00 PM', 'color: red;');
+    //console.log('%cStart time: ' + start, 'color: orangered;');
+    //console.log('%cEnd time: ' + end, 'color: orangered;');
+    return false;
+  }
+  return true;
+}
+
+function validateTimeClash(_data, day, timeStart, timeEnd){
+  let valid = true;
+  if (_data[day]){
+    //get time range from data to see if it overlaps with any other time range
+    Object.keys(_data[day]).forEach(time => {
+
+      const [timeStartValue, timeEndValue] = timeParser(time);
+
+      if (timeStart >= timeStartValue && timeStart <= timeEndValue){
+        errLog('Time clash!');
+        valid = false;
+      }
+      if (timeEnd >= timeStartValue && timeEnd <= timeEndValue){
+        errLog('Time clash!');
+        valid = false;
+      }
+    });
+  }
+  return valid;
+}
+
 
 /**
 * @param {string} time
@@ -172,8 +210,8 @@ function timeConverter(time){
   const timeStartValue = parseInt(timeStart[0])*60 + parseInt(timeStart[1]);
   const timeEnd = timeRange[1].trim().split(':');
   const timeEndValue = parseInt(timeEnd[0])*60 + parseInt(timeEnd[1]);
-  const timeStart12h = timeStartValue < 720 ? `${timeStart[0]}:${timeStart[1]} AM` : `${timeStart[0] == 12 ? timeStart[0] : timeStart[0]-12}:${timeStart[1]} PM`;
-  const timeEnd12h = timeEndValue < 720 ? `${timeEnd[0]}:${timeEnd[1]} AM` : `${timeEnd[0] == 12 ? timeEnd[0] : timeEnd[0]-12}:${timeEnd[1]} PM`;
+  const timeStart12h = timeStartValue < 720 ? `${timeStart[0].toString().padStart(2, '0')}:${timeStart[1].toString().padStart(2, '0')} AM` : `${timeStart[0] == 12 ? timeStart[0].toString().padStart(2, '0') : (timeStart[0]-12).toString().padStart(2, '0')}:${timeStart[1].toString().padStart(2, '0')} PM`;
+  const timeEnd12h = timeEndValue < 720 ? `${timeEnd[0].toString().padStart(2, '0')}:${timeEnd[1].toString().padStart(2, '0')} AM` : `${timeEnd[0] == 12 ? timeEnd[0].toString().padStart(2, '0') : (timeEnd[0]-12).toString().padStart(2, '0')}:${timeEnd[1].toString().padStart(2, '0')} PM`;
   return `${timeStart12h} - ${timeEnd12h}`;
 }
 
@@ -204,12 +242,12 @@ const colorsArray = [
 let canvasSize;
 
 if (document.body.clientHeight > document.body.clientWidth){
-    canvasSize = document.body.clientWidth*0.6;
+    canvasSize = document.body.clientWidth*0.7;
 }else{
-    canvasSize = document.body.clientHeight*0.6;
+    canvasSize = document.body.clientHeight*0.7;
 }
 
-const font_size = canvasSize/15;
+const font_size = canvasSize/16;
 
 function loadData(){
   if (Object.keys(data).length < 4){
@@ -239,10 +277,10 @@ function init(){
         const ctx = canvas.getContext('2d');
     
         canvas.height = canvasSize;
-        canvas.width = canvasSize;
+        canvas.width = canvasSize*1.3;
         
-        const xCord = canvasSize / 2;
-        const yCord = canvasSize / 2;
+        const xCord = canvas.width / 2;
+        const yCord = canvas.height / 2;
     
         const radius = canvasSize/3;
     
@@ -261,7 +299,7 @@ function init(){
         ctx.font = `${font_size}px Arial`;
         ctx.textAlign = 'center';
     
-        ctx.fillText(day, xCord, canvasSize-font_size);
+        ctx.fillText(day, xCord, font_size*2);
     });
 }
 
@@ -326,10 +364,12 @@ function draw(day, time, ctx, xCord, yCord, radius){
  */
 function convertTime(time){
     const hour = parseInt(time.split(':')[0]);
-    const minutes = time.split(':')[1];
+    const minutes = parseInt(time.split(':')[1]);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    //return `${hour12}:${minutes} ${ampm}`;
+    //add 0 before hour and minutes if it is less than 10, eg. 1:5 PM -> 01:05 PM with the padsStart method
+    return `${hour12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 }
 
 /**
@@ -365,10 +405,12 @@ function writeLabel(courseInfo, Time, startAngle, endAngle, ctx, xCord, yCord, r
     ctx.textAlign = 'center';
     ctx.fillText(courseInfo[0], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2));
     if (courseInfo[1]){
-        ctx.fillText(courseInfo[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
-        ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 30);
+      
+      ctx.fillText(courseInfo[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
+      ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 30);
+      
     }else{
-        ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
+      ctx.fillText(Time, xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15);
     }
 }
 
@@ -400,6 +442,110 @@ function handleDeleteCourse(evt){
       }
       console.log('%cCourse Deleted', 'color: red;');
     }
+  }
+}
+
+function download(){
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+  const downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute("href", dataStr);
+  downloadAnchorNode.setAttribute("download", "schedule.json");
+  document.body.appendChild(downloadAnchorNode); // required for firefox
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
+}
+
+let importedFiles;
+
+function validateData(data){
+  if (!data){
+    errLog('No Data');
+    console.log('%cNo Data', 'color: red;');
+    return false;
+  }
+  let valid = true;
+  Object.keys(data).forEach(day => {
+    if (!days.includes(day)){
+      errLog(`Invalid Day: ${day}`);
+      //console.log('%cInvalid Day: ' + day, 'color: red;');
+      valid = false;
+    }
+    
+    if (valid){
+      Object.keys(data[day]).forEach(time => {
+
+        const timeStart = time.split('-')[0];
+        const timeEnd = time.split('-')[1];
+
+        const convertedTimeStart = convertTime(timeStart);
+        const convertedTimeEnd = convertTime(timeEnd);
+
+        /*
+        console.log('%cValidating time range', 'color: deepskyblue;');
+        console.log('%cStart time: ' + convertedTimeStart, 'color: deepskyblue;');
+        console.log('%cEnd time: ' + convertedTimeEnd, 'color: deepskyblue;');
+        console.log('Selected day: ' + day);
+        console.log('Selected course: ' + data[day][time]);
+        */
+
+        valid = validateTimeRange(convertedTimeStart, convertedTimeEnd);
+        //console.log('time range: ' + valid);
+
+        if (valid){
+          const course = data[day][time];
+          if (!course){
+            valid = false;
+            console.log('%cNo Course', 'color: red;')
+          }else{
+            if (!COURSES.includes(course[0])){
+              errLog(`Invalid Course: ${course[0]}`);
+              console.log('%cInvalid Course: ' + course[0], 'color: red;');
+              valid = false;
+            }
+          }
+
+          if (valid){
+
+            valid = validateTimeClash(data, day, convertedTimeStart, convertedTimeEnd);
+            //console.log('time clash: ' + valid)
+            if (valid){
+
+              if (!ROOMS.includes(course[1])){
+                errLog(`Invalid Room: ${course[1]}`);
+                console.log('%cInvalid Room: ' + course[1], 'color: red;');
+                valid = false;
+              }
+            }
+          }
+        }
+      });
+    }
+  });
+  return valid;
+}
+
+function loadFile(){
+  try{
+    if (importedFiles){
+      const file = importedFiles.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const tempData = JSON.parse(text);
+        if (validateData(tempData)){
+          data = tempData;
+          console.log('%cFile Loaded', 'color: green;');
+          loadData();
+        }else{
+          console.log('%cFile contains invalid data', 'color: red;');
+          errLog('File contains invalid data');
+        }
+      };
+      reader.readAsText(file);
+    }
+  }catch(e){
+    console.log('%cError Loading File', 'color: red;');
+    errLog('Error Loading File');
   }
 }
 
@@ -464,33 +610,56 @@ function handleDeleteCourse(evt){
       <button class="clear" on:click={() => {
           selectedDay = '';
           selectedCourse = '';
+          selectedRoom = '';
           selectedTimeStart = '';
           selectedTimeEnd = '';
-      }}>Clear</button>
+
+          if (importedFiles?.files?.length > 0){
+            importedFiles.value = '';
+          }
+
+          reset();
+
+      }}>Clear <i class="fa-solid fa-trash"></i></button>
       <button class="finishButton" on:click={loadData}>Finish <i class="fa-solid fa-check"></i></button>
+    </div>
+
+    <div class="form-field">
+      <!-- import from file -->
+      <div class="or">Or</div>
+      <label for="file" id="fileImportLabel">Import from file</label>
+      <input type="file" id="file" accept=".json" on:change={loadFile} bind:this={importedFiles}>
     </div>
 
   </div>
   <footer>&copy; Fuad Hasan</footer>
 {:else}
-  <button class="clear reset" on:click={() => {
+  <div class="form-group margin">
+    <button class="export" on:click={download}>Export Data</button>
+    <button class="clear reset" on:click={() => {
 
-    while (charts.firstChild) {
-      charts.removeChild(charts.firstChild);
-    }
+      while (charts.firstChild) {
+        charts.removeChild(charts.firstChild);
+      }
 
-    selectedDay = '';
-    selectedCourse = '';
-    selectedTimeStart = '';
-    selectedTimeEnd = '';
+      selectedDay = '';
+      selectedCourse = '';
+      selectedRoom = '';
+      selectedTimeStart = '';
+      selectedTimeEnd = '';
 
-    data = {};
+      if (importedFiles?.files?.length > 0){
+        importedFiles.value = '';
+      }
 
-    localStorage.removeItem('data');
+      data = {};
 
-    READY = false;
+      localStorage.removeItem('data');
 
-  }}>Clear Data</button>
+      READY = false;
+
+    }}>Clear Data</button>
+  </div>
 {/if}
 
 <style>
@@ -617,6 +786,44 @@ function handleDeleteCourse(evt){
     border: none;
     outline: none;
     padding: 5px;
+  }
+
+  .or{
+    color:rgba(187, 221, 255, 0.336);
+    position: relative;
+  }
+
+  .or::after, .or::before{
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -110px;
+    width: 100px;
+    height: 2px;
+    transform: translateY(-50%);
+    background: rgba(187, 221, 255, 0.336);
+  }
+
+  .or::before{
+    left: unset;
+    right: -110px;
+  }
+
+  #fileImportLabel{
+    cursor: pointer;
+    padding: 5px;
+    color: rgb(26, 121, 209);
+    text-decoration: underline;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+  }
+  #fileImportLabel:hover{
+    color: rgb(26, 121, 209, 0.8);
+  }
+
+  #file{
+    display: none;
   }
 
   input[type='time']{
