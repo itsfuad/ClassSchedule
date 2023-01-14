@@ -20,7 +20,7 @@ onMount(() => {
       return;
     }else{
       const temp = titleCase(selectedDay);
-      if (!days.includes(temp)){
+      if (!DAYS.includes(temp)){
         errLog('Please select a valid day');
         return;
       }
@@ -68,7 +68,7 @@ onMount(() => {
 
     const time = `${selectedTimeStart} - ${selectedTimeEnd}`;
 
-    valid = validateTimeClash(data, selectedDay, selectedTimeStartValue, selectedTimeEndValue);
+    valid = validateTimeClash(__DATA__, selectedDay, selectedTimeStartValue, selectedTimeEndValue);
 
     if (!valid){
       return;
@@ -95,11 +95,11 @@ onMount(() => {
 
       coursesAddedList.appendChild(li);
 
-      if (!data[selectedDay]){
-        data[selectedDay] = {};
+      if (!__DATA__[selectedDay]){
+        __DATA__[selectedDay] = {};
       }
 
-      data[selectedDay][time] = [selectedCourse, selectedRoom];
+      __DATA__[selectedDay][time] = [selectedCourse, selectedRoom];
 
       console.log('%cCourse added', 'color: deepskyblue;');
 
@@ -115,17 +115,17 @@ onMount(() => {
     if (Object.keys(parsedData).length == 4){
       if (validateData(parsedData)){
         console.log('%cData loaded', 'color: deepskyblue;');
-        data = parsedData;
+        __DATA__ = parsedData;
         loadData();
       }else{
         console.log('%cInvalid data found', 'color: red;');
         localStorage.removeItem('data');
-        data = {};
+        __DATA__ = {};
       }
     }else{
       console.log('%cInvalid data found', 'color: red;');
       localStorage.removeItem('data');
-      data = {};
+      __DATA__ = {};
     }
 
   }else{
@@ -161,42 +161,39 @@ function validateTimeRange(start, end){
   return true;
 }
 
-function validateTimeClash(_data, day, timeStart, timeEnd){
-  let valid = true;
-  if (_data[day]){
-    //get time range from data to see if it overlaps with any other time range
-    Object.keys(_data[day]).forEach(time => {
-
-      const [timeStartValue, timeEndValue] = timeParser(time);
-
-      if (timeStart > timeStartValue && timeStart < timeEndValue){
-        errLog('Time clash!');
-        valid = false;
+function checkTimeClashes(data) {
+  for (let day in data) {
+    let times = Object.keys(data[day]);
+    for (let i = 0; i < times.length; i++) {
+      for (let j = i + 1; j < times.length; j++) {
+        const [start1, end1] = timeParser(times[i]);
+        const [start2, end2] = timeParser(times[j]);
+        if(start1 >= start2 && start1 < end2 || start2 >= start1 && start2 < end1 ){
+          console.log("Clash on " + day + " between " + data[day][times[i]][0] + " and " + data[day][times[j]][0]);
+          console.log('Time: ' + times[i] + ' and ' + times[j]);
+          return false;
+        }
       }
-      if (timeEnd > timeStartValue && timeEnd < timeEndValue){
-        errLog('Time clash!');
-        valid = false;
-      }
-    });
+    }
   }
-  return valid;
+  return true;
 }
 
 
 /**
 * @param {string} time
 * @returns {[number, number]}
+* @example timeParser('8:00 - 9:00') => [480, 540]
 */
-function timeParser(time){
-  if (!time){
-    return [0, 0];
-  }
-  const timeRange = time.split('-');
-  const timeStart = timeRange[0].trim().split(':');
-  const timeStartValue = parseInt(timeStart[0])*60 + parseInt(timeStart[1]);
-  const timeEnd = timeRange[1].trim().split(':');
-  const timeEndValue = parseInt(timeEnd[0])*60 + parseInt(timeEnd[1]);
-  return [timeStartValue, timeEndValue];
+function timeParser(timeRange) {
+  const times = timeRange.split("-").map(time => time.trim());
+  const startTime = times[0];
+  const endTime = times[1];
+  const start = new Date("1970-01-01 " + startTime);
+  const end = new Date("1970-01-01 " + endTime);
+  const startMinutes = start.getHours() * 60 + start.getMinutes();
+  const endMinutes = end.getHours() * 60 + end.getMinutes();
+  return [startMinutes, endMinutes];
 }
 
 //24h to 12h time
@@ -222,7 +219,7 @@ let addCourse;
 let errorText, errorClass = '';
 
 let charts;
-let data = {};
+let __DATA__ = {};
 
 const colors = {
     'Free': '#000800aa',
@@ -253,12 +250,12 @@ if (document.body.clientHeight > document.body.clientWidth){
 const font_size = canvasSize/16;
 
 function loadData(){
-  if (Object.keys(data).length < 4){
+  if (Object.keys(__DATA__).length < 4){
     errLog('Please complete the form');
     return;
   }
   if (!localStorage.getItem('data')){
-    localStorage.setItem('data', JSON.stringify(data));
+    localStorage.setItem('data', JSON.stringify(__DATA__));
     console.log('%cData saved', 'color: deepskyblue;');
   }
   document.title = 'Your Schedule';
@@ -273,11 +270,24 @@ function init(){
     console.log('%cInitializing Charts', 'color: deepskyblue;');
     READY = true;
 
-    Object.keys(data).forEach(day => {
+    //sort data by day sunday - wednesday
+    const data = {};
+
+    for (let i = 0; i < DAYS.length; i++){
+        if (__DATA__[DAYS[i]]){
+            data[DAYS[i]] = __DATA__[DAYS[i]];
+        }
+    }
+    
+    __DATA__ = data;
+
+    Object.keys(__DATA__).forEach(day => {
 
         const canvas = document.createElement('canvas');
         charts.appendChild(canvas);
         const ctx = canvas.getContext('2d');
+        
+        ctx.globalCompositeOperation = 'destination-over';
     
         canvas.height = canvasSize;
         canvas.width = canvasSize*1.3;
@@ -293,7 +303,7 @@ function init(){
         ctx.fillStyle = '#111d2a';
         ctx.fill();
         
-        Object.keys(data[day]).forEach( async (time) => {
+        Object.keys(__DATA__[day]).forEach( async (time) => {
             draw(day, time, ctx, xCord, yCord, radius);
         });
     
@@ -331,7 +341,7 @@ function errLog(err){
  */
 function draw(day, time, ctx, xCord, yCord, radius){
 
-    const courseInfo = data[day][time];
+    const courseInfo = __DATA__[day][time];
     const courseName = courseInfo[0];
 
     if (!colors[courseName]){
@@ -364,6 +374,8 @@ function draw(day, time, ctx, xCord, yCord, radius){
 
 /**
  * @param {string} time
+ * @returns {string}
+ * @example convertTime('13:00') -> '1:00 PM'
  */
 function convertTime(time){
     const hour = parseInt(time.split(':')[0]);
@@ -421,7 +433,7 @@ function reset(){
   errorClass = '';
 }
 
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday'];
 
 let selectedCourse, selectedDay, selectedRoom, selectedTimeStart, selectedTimeEnd;
 
@@ -436,12 +448,12 @@ function handleDeleteCourse(evt){
   if (course){
     const day = course.dataset.day;
     const time = course.dataset.time;
-    if (data[day]){
+    if (__DATA__[day]){
       course.remove();
       course.remove();
-      delete data[day][time];
-      if (Object.keys(data[day]).length == 0){
-        delete data[day];
+      delete __DATA__[day][time];
+      if (Object.keys(__DATA__[day]).length == 0){
+        delete __DATA__[day];
       }
       console.log('%cCourse Deleted', 'color: red;');
     }
@@ -449,7 +461,7 @@ function handleDeleteCourse(evt){
 }
 
 function download(){
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(__DATA__));
   const downloadAnchorNode = document.createElement('a');
   downloadAnchorNode.setAttribute("href", dataStr);
   downloadAnchorNode.setAttribute("download", "schedule.json");
@@ -468,7 +480,7 @@ function validateData(data){
   }
   let valid = true;
   Object.keys(data).forEach(day => {
-    if (!days.includes(day)){
+    if (!DAYS.includes(day)){
       errLog(`Invalid Day: ${day}`);
       //console.log('%cInvalid Day: ' + day, 'color: red;');
       valid = false;
@@ -515,7 +527,7 @@ function validateData(data){
           }
         }
 
-        valid = validateTimeClash(data, day, convertedTimeStart, convertedTimeEnd);
+        valid = checkTimeClashes(data);
         if (!valid){
           return;
         }
@@ -542,7 +554,7 @@ function loadFile(){
         const text = e.target.result;
         const tempData = JSON.parse(text);
         if (validateData(tempData)){
-          data = tempData;
+          __DATA__ = tempData;
           console.log('%cFile Loaded', 'color: green;');
           loadData();
         }else{
@@ -576,7 +588,7 @@ function loadFile(){
     <div class="form-field">
       <input list="day" class="dropdown-list" bind:value={selectedDay} on:change={reset} placeholder=" - Select day - ">
       <datalist name="day" id="day">
-        {#each days as day}
+        {#each DAYS as day}
           <option class="list-item" value={day}>{day}</option>
         {/each}
       </datalist>
@@ -661,7 +673,7 @@ function loadFile(){
         importedFiles.value = '';
       }
 
-      data = {};
+      __DATA__ = {};
 
       localStorage.removeItem('data');
 
