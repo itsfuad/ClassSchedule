@@ -650,16 +650,19 @@
           if (validateData(tempData)) {
             __DATA__ = tempData;
             console.log("%cFile Loaded", "color: green;");
+            importedFiles.value = "";
             loadData();
           } else {
+            importedFiles.value = "";
             return;
           }
         };
         reader.readAsText(file);
       }
     } catch (e) {
-      console.log("%cError Loading File", "color: red;");
-      errLog("Error Loading File");
+      console.log("%cFile contains invalid data", "color: red;");
+      errLog("File contains invalid data");
+      importedFiles.value = "";
     }
   }
 </script>
