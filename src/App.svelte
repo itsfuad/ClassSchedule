@@ -643,6 +643,13 @@
     try {
       if (importedFiles) {
         const file = importedFiles.files[0];
+        //if file is not json
+        if (file.type != "application/json") {
+          console.log("%cFile is not a json file", "color: red;");
+          errLog("File is not a json file");
+          importedFiles.value = "";
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function (e) {
           const text = e.target.result;
