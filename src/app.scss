@@ -29,6 +29,7 @@ body{
   justify-content: center;
   width: 100%;
   height: 100%;
+  min-height: 95vh;
   position: relative;
   z-index: 1;
 }
@@ -111,13 +112,11 @@ button{
   margin: 20px;
 }
 
-footer{
+a{
   font-size: 0.6rem;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 5px;
   text-align: center;
-  z-index: 1;
+  text-decoration: underline;
+  cursor: pointer;
+  color: aliceblue;
 }

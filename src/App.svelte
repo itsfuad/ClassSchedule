@@ -808,7 +808,7 @@
 
     <div class="form-group backgound padding">
       <div class="form-field">
-        <label for="time" class="title small">Class starts</label>
+        <label title="Choose time when class starts" for="time" class="title small">Class starts</label>
         <input
           type="time"
           name="courseTime"
@@ -819,7 +819,7 @@
       </div>
 
       <div class="form-field">
-        <label for="time" class="title small">Class ends</label>
+        <label title="Choose time when class ends" for="time" class="title small">Class ends</label>
         <input
           type="time"
           name="courseTime"
@@ -831,10 +831,11 @@
     </div>
 
     <div class="form-group">
-      <button class="addButton" on:click={addCourse}
+      <button title="Add selected course to the list" class="addButton" on:click={addCourse}
         >Add <i class="fa-solid fa-circle-plus" /></button
       >
       <button
+        title="Clear input data from form"
         class="clear"
         on:click={() => {
           selectedDay = "";
@@ -850,7 +851,7 @@
           reset();
         }}>Clear <i class="fa-solid fa-trash" /></button
       >
-      <button class="finishButton" on:click={loadData}
+      <button class="finishButton" title="Show charts based on data" on:click={loadData}
         >Finish <i class="fa-solid fa-check" /></button
       >
     </div>
@@ -858,7 +859,7 @@
     <div class="form-field">
       <!-- import from file -->
       <div class="or">Or</div>
-      <label for="file" id="fileImportLabel">Import from file</label>
+      <label for="file" title="Import data from existing file" id="fileImportLabel">Import from file</label>
       <input
         type="file"
         id="file"
@@ -868,11 +869,10 @@
       />
     </div>
   </div>
-  <footer>&copy; Fuad Hasan</footer>
-{:else}
+  {:else}
   <div class="form-group margin">
-    <button class="export" on:click={download}>Export Data</button>
-    <button
+    <button class="export" title="Download data on local device" on:click={download}>Export Data</button>
+    <button title="Clear all data"
       class="clear reset"
       on:click={() => {
         while (charts.firstChild) {
@@ -884,21 +884,21 @@
         selectedRoom = "";
         selectedTimeStart = "";
         selectedTimeEnd = "";
-
+        
         if (importedFiles?.files?.length > 0) {
           importedFiles.value = "";
         }
 
         __DATA__ = {};
-
+        
         localStorage.removeItem("data");
 
         READY = false;
       }}>Clear Data</button
     >
   </div>
-{/if}
-
+  {/if}
+  
 <style>
   #coursesDisplay {
     display: flex;
