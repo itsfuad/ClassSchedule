@@ -233,7 +233,7 @@
         }
       }
     }
-    console.log("Free slot");
+    //console.log("Free slot");
     return true;
   }
 
