@@ -52,13 +52,11 @@
         return;
       }
 
-      const [selectedTimeStartValue, selectedTimeEndValue] = timeParser(
-        `${selectedTimeStart} - ${selectedTimeEnd}`
-      );
+      const [selectedTimeStartRange, selectedTimeEndRange] = timeParser(`${selectedTimeStart} - ${selectedTimeEnd}`);
 
       let valid = true;
 
-      valid = validateTimeRange(selectedTimeStartValue, selectedTimeEndValue);
+      valid = validateTimeRange(selectedTimeStartRange, selectedTimeEndRange);
 
       if (!valid) {
         return;
@@ -116,7 +114,7 @@
     const dataAvailable = localStorage.getItem("data");
     if (dataAvailable) {
       const parsedData = JSON.parse(dataAvailable);
-      if (Object.keys(parsedData).length == 4) {
+      if (Object.keys(parsedData).length > 0) {
         if (validateData(parsedData)) {
           console.log("%cData loaded", "color: deepskyblue;");
           __DATA__ = parsedData;
@@ -139,7 +137,7 @@
   });
 
   function validateTimeRange(start, end) {
-    if (start >= end) {
+    if (start > end) {
       errLog("Start time must be before end time");
       console.log("%cStart time must be before end time", "color: red;");
       //console.log('%cStart time: ' + start, 'color: orangered;');
@@ -154,6 +152,11 @@
       );
       //console.log('%cStart time: ' + start, 'color: orangered;');
       //console.log('%cEnd time: ' + end, 'color: orangered;');
+      return false;
+    }
+    if (end - start < 60){
+      errLog('Courses should have at least 1 lecture hour.\nRe check time range.');
+      console.log('Course less than an hour');
       return false;
     }
     if (start < 480 || start > 1080) {
@@ -312,6 +315,8 @@
     "#4d6a59",
   ];
 
+  let canvasResolution = 1080;
+
   let canvasSize;
 
   if (document.body.clientHeight > document.body.clientWidth) {
@@ -320,13 +325,15 @@
     canvasSize = document.body.clientHeight * 0.7;
   }
 
-  const font_size = canvasSize / 16;
+  const font_size = canvasResolution / 16;
 
   function loadData() {
-    if (Object.keys(__DATA__).length < 4) {
-      errLog("Please complete the form");
+    
+    if (Object.keys(__DATA__).length == 0) {
+      errLog("Empty form");
       return;
     }
+    
     if (!localStorage.getItem("data")) {
       localStorage.setItem("data", JSON.stringify(__DATA__));
       console.log("%cData saved", "color: deepskyblue;");
@@ -360,13 +367,16 @@
 
       ctx.globalCompositeOperation = "destination-over";
 
-      canvas.height = canvasSize;
-      canvas.width = canvasSize * 1.3;
+      canvas.height = canvasResolution;
+      canvas.width = canvasResolution * 1.3;
+
+      canvas.style.height = `${canvasSize}px`;
+      canvas.style.width = `${canvasSize * 1.3}px`;
 
       const xCord = canvas.width / 2;
       const yCord = canvas.height / 2;
 
-      const radius = canvasSize / 3;
+      const radius = canvasResolution / 3;
 
       ctx.beginPath();
       ctx.arc(xCord, yCord, radius, 0, (360 * Math.PI) / 180);
@@ -441,25 +451,8 @@
 
     //run writeLabel function after all fillTimeClock functions are done
 
-    fillTimeClock(
-      startAngle,
-      endAngle,
-      colors[courseName],
-      ctx,
-      xCord,
-      yCord,
-      radius
-    );
-    writeLabel(
-      courseInfo,
-      timeRange,
-      startAngle,
-      endAngle,
-      ctx,
-      xCord,
-      yCord,
-      radius
-    );
+    fillTimeClock(startAngle,endAngle,colors[courseName],ctx,xCord,yCord,radius);
+    writeLabel(courseInfo,timeRange,startAngle,endAngle,ctx,xCord,yCord,radius);
   }
 
   /**
@@ -514,41 +507,17 @@
    * @param {number} yCord
    * @param {number} radius
    */
-  function writeLabel(
-    courseInfo,
-    Time,
-    startAngle,
-    endAngle,
-    ctx,
-    xCord,
-    yCord,
-    radius
-  ) {
+  function writeLabel(courseInfo,Time,startAngle,endAngle,ctx,xCord,yCord,radius) {
     ctx.fillStyle = "#bdf";
     ctx.font = `${font_size / 2.5}px Arial`;
     ctx.textAlign = "center";
-    ctx.fillText(
-      courseInfo[0],
-      xCord + radius * Math.cos((startAngle + endAngle) / 2),
-      yCord + radius * Math.sin((startAngle + endAngle) / 2)
-    );
+    ctx.fillText(courseInfo[0], xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2));
     if (courseInfo[1]) {
       ctx.fillText(
-        courseInfo[1],
-        xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15
-      );
-      ctx.fillText(
-        Time,
-        xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + 30
-      );
+        courseInfo[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size/2);
+      ctx.fillText(Time,xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size);
     } else {
-      ctx.fillText(
-        Time,
-        xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + 15
-      );
+      ctx.fillText(Time,xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size/2);
     }
   }
 
@@ -622,20 +591,17 @@
             return;
           }
 
-          const timeStart = time.split("-")[0];
-          const timeEnd = time.split("-")[1];
-
-          const [convertedTimeStart, convertedTimeEnd] = timeParser(timeStart, timeEnd);
+          const [convertedTimeStartRange, convertedTimeEndRange] = timeParser(time);
 
           /*
-        console.log('%cValidating time range', 'color: deepskyblue;');
-        console.log('%cStart time: ' + convertedTimeStart, 'color: deepskyblue;');
-        console.log('%cEnd time: ' + convertedTimeEnd, 'color: deepskyblue;');
-        console.log('Selected day: ' + day);
-        console.log('Selected course: ' + data[day][time]);
-        */
-
-          valid = validateTimeRange(convertedTimeStart, convertedTimeEnd);
+          console.log('%cValidating time range', 'color: deepskyblue;');
+          console.log('%cStart time: ' + convertedTimeStartRange, 'color: deepskyblue;');
+          console.log('%cEnd time: ' + convertedTimeEndRange, 'color: deepskyblue;');
+          console.log('Selected day: ' + day);
+          console.log('Selected course: ' + data[day][time]);
+          */
+        
+          valid = validateTimeRange(convertedTimeStartRange, convertedTimeEndRange);
           if (!valid) {
             return;
           }
