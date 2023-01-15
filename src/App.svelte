@@ -2,6 +2,7 @@
   // @ts-nocheck
 
   import { onMount } from "svelte";
+  import { fly, fade } from "svelte/transition";
   import { COURSES, titleCase } from "./courses.js";
   import { ROOMS } from "./rooms.js";
 
@@ -741,7 +742,8 @@
   }
 </script>
 
-<div id="charts" bind:this={charts} />
+<div class="container">
+  <div id="charts" bind:this={charts} />
 
 {#if !READY}
   <div id="coursesDisplay">
@@ -755,7 +757,7 @@
       >Added Courses <i class="fa-solid fa-puzzle-piece" /></label
     >
   </div>
-  <div class="form">
+  <div class="form" in:fly={{ y: 50, duration: 300}} out:fade>
     <div class="errLog {errorClass}">{errorText}</div>
     <div class="title mid">
       Select your courses and times <i class="fa-solid fa-calendar-days" />
@@ -898,6 +900,13 @@
     >
   </div>
   {/if}
+
+</div>
+
+<a href="https://github.com/itsfuad/ClassSchedule">
+  <!-- Github Link -->
+  Source Code <i class="fa-solid fa-code-branch"></i>
+</a>
   
 <style>
   #coursesDisplay {
