@@ -625,8 +625,7 @@
           const timeStart = time.split("-")[0];
           const timeEnd = time.split("-")[1];
 
-          const convertedTimeStart = convertTime(timeStart);
-          const convertedTimeEnd = convertTime(timeEnd);
+          const [convertedTimeStart, convertedTimeEnd] = timeParser(timeStart, timeEnd);
 
           /*
         console.log('%cValidating time range', 'color: deepskyblue;');
