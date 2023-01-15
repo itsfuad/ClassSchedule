@@ -52,7 +52,9 @@
         return;
       }
 
-      const [selectedTimeStartRange, selectedTimeEndRange] = timeParser(`${selectedTimeStart} - ${selectedTimeEnd}`);
+      const [selectedTimeStartRange, selectedTimeEndRange] = timeParser(
+        `${selectedTimeStart} - ${selectedTimeEnd}`
+      );
 
       let valid = true;
 
@@ -136,6 +138,11 @@
     }
   });
 
+  /**
+   * 
+   * @param {number} start
+   * @param {number} end
+   */
   function validateTimeRange(start, end) {
     if (start > end) {
       errLog("Start time must be before end time");
@@ -154,9 +161,11 @@
       //console.log('%cEnd time: ' + end, 'color: orangered;');
       return false;
     }
-    if (end - start < 60){
-      errLog('Courses should have at least 1 lecture hour.\nRe check time range.');
-      console.log('Course less than an hour');
+    if (end - start < 60) {
+      errLog(
+        "Courses should have at least 1 lecture hour.\nRe check time range."
+      );
+      console.log("Course less than an hour");
       return false;
     }
     if (start < 480 || start > 1080) {
@@ -172,6 +181,12 @@
     return true;
   }
 
+  /**
+   * @param {object} data
+   * @param {string} customTime
+   * @param {string} customDay
+   * @param {string} customCourse
+  */
   function checkTimeClashes(
     data,
     customTime = null,
@@ -214,17 +229,19 @@
           ) {
             let errorText;
             if (customCourse) {
-              errorText = `Time clash with ${data[day][times[j]][0]} [${
-                timeConverter(times[j])
-              }]`;
+              errorText = `Time clash with ${
+                data[day][times[j]][0]
+              } [${timeConverter(times[j])}]`;
             } else if (!customTime && !customDay && !customCourse) {
-              errorText = `Time clash on ${day}, between ${data[day][times[i]][0]} [${
-                timeConverter(times[i])
-              }] and ${data[day][times[j]][0]} [${times[j]}].\nPlease select time correctly.`;
+              errorText = `Time clash on ${day}, between ${
+                data[day][times[i]][0]
+              } [${timeConverter(times[i])}] and ${data[day][times[j]][0]} [${
+                times[j]
+              }].\nPlease select time correctly.`;
             } else {
-              errorText = `Time clash with ${data[day][times[j]][0]} [${
-                timeConverter(times[j])
-              }]`;
+              errorText = `Time clash with ${
+                data[day][times[j]][0]
+              } [${timeConverter(times[j])}]`;
             }
             console.log(errorText);
             errLog(errorText);
@@ -238,7 +255,7 @@
   }
 
   /**
-   * @param {string} time
+   * @param {string} timeRange
    * @returns {[number, number]}
    * @example timeParser('8:00 - 9:00') => [480, 540]
    */
@@ -328,12 +345,11 @@
   const font_size = canvasResolution / 16;
 
   function loadData() {
-    
     if (Object.keys(__DATA__).length == 0) {
       errLog("Empty form");
       return;
     }
-    
+
     if (!localStorage.getItem("data")) {
       localStorage.setItem("data", JSON.stringify(__DATA__));
       console.log("%cData saved", "color: deepskyblue;");
@@ -342,9 +358,6 @@
     init();
   }
 
-  /**
-   * @param {{ Sunday?: { '8:00 AM - 9:15 AM': string[]; '9:15 AM - 1:00 PM': string[]; '1:00 PM - 2:15 PM': string[]; '2:15 PM - 3:30 PM': string[]; '3:30 PM - 6:00 PM': string[]; }; Monday?: { '8:00 AM - 2:40 PM': string[]; '2:40 PM - 4:20 PM': string[]; '4:20 PM - 6:00 PM': string[]; }; Tuesday?: { '8:00 AM - 9:15 AM': string[]; '9:15 AM - 1:00 PM': string[]; '1:00 PM - 2:15 PM': string[]; '2:15 PM - 6:00 PM': string[]; }; Wednesday?: { '8:00 AM - 10:30 AM': string[]; '10:30 AM - 3:30 PM': string[]; '3:30 PM - 6:00 PM': string[]; }; }} data
-   */
   function init() {
     console.log("%cInitializing Charts", "color: deepskyblue;");
     READY = true;
@@ -404,6 +417,10 @@
     return color;
   }
 
+  /**
+   * 
+   * @param {string} err
+   */
   function errLog(err) {
     errorClass = "";
     setTimeout(() => {
@@ -449,10 +466,25 @@
     const startAngle = ((startMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
     const endAngle = ((endMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
 
-    //run writeLabel function after all fillTimeClock functions are done
-
-    fillTimeClock(startAngle,endAngle,colors[courseName],ctx,xCord,yCord,radius);
-    writeLabel(courseInfo,timeRange,startAngle,endAngle,ctx,xCord,yCord,radius);
+    fillTimeClock(
+      startAngle,
+      endAngle,
+      colors[courseName],
+      ctx,
+      xCord,
+      yCord,
+      radius
+    );
+    writeLabel(
+      courseInfo,
+      timeRange,
+      startAngle,
+      endAngle,
+      ctx,
+      xCord,
+      yCord,
+      radius
+    );
   }
 
   /**
@@ -507,17 +539,41 @@
    * @param {number} yCord
    * @param {number} radius
    */
-  function writeLabel(courseInfo,Time,startAngle,endAngle,ctx,xCord,yCord,radius) {
+  function writeLabel(
+    courseInfo,
+    Time,
+    startAngle,
+    endAngle,
+    ctx,
+    xCord,
+    yCord,
+    radius
+  ) {
     ctx.fillStyle = "#bdf";
     ctx.font = `${font_size / 2.5}px Arial`;
     ctx.textAlign = "center";
-    ctx.fillText(courseInfo[0], xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2));
+    ctx.fillText(
+      courseInfo[0],
+      xCord + radius * Math.cos((startAngle + endAngle) / 2),
+      yCord + radius * Math.sin((startAngle + endAngle) / 2)
+    );
     if (courseInfo[1]) {
       ctx.fillText(
-        courseInfo[1], xCord + radius * Math.cos((startAngle + endAngle) / 2), yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size/2);
-      ctx.fillText(Time,xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size);
+        courseInfo[1],
+        xCord + radius * Math.cos((startAngle + endAngle) / 2),
+        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
+      );
+      ctx.fillText(
+        Time,
+        xCord + radius * Math.cos((startAngle + endAngle) / 2),
+        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size
+      );
     } else {
-      ctx.fillText(Time,xCord + radius * Math.cos((startAngle + endAngle) / 2),yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size/2);
+      ctx.fillText(
+        Time,
+        xCord + radius * Math.cos((startAngle + endAngle) / 2),
+        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
+      );
     }
   }
 
@@ -536,6 +592,9 @@
 
   let coursesAddedList;
 
+  /**
+   * @param {event} evt
+  */
   function handleDeleteCourse(evt) {
     //if the target is not the ul element
     if (evt.target == coursesAddedList) {
@@ -571,6 +630,10 @@
 
   let importedFiles;
 
+  /**
+   * 
+   * @param {object} data
+   */
   function validateData(data) {
     if (!data) {
       errLog("No Data");
@@ -591,7 +654,8 @@
             return;
           }
 
-          const [convertedTimeStartRange, convertedTimeEndRange] = timeParser(time);
+          const [convertedTimeStartRange, convertedTimeEndRange] =
+            timeParser(time);
 
           /*
           console.log('%cValidating time range', 'color: deepskyblue;');
@@ -600,8 +664,11 @@
           console.log('Selected day: ' + day);
           console.log('Selected course: ' + data[day][time]);
           */
-        
-          valid = validateTimeRange(convertedTimeStartRange, convertedTimeEndRange);
+
+          valid = validateTimeRange(
+            convertedTimeStartRange,
+            convertedTimeEndRange
+          );
           if (!valid) {
             return;
           }
