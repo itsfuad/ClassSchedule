@@ -325,9 +325,9 @@
     }
     else if(sanitizeInput(username, password)){
       
-      loadingMessage = "Please wait";
+      loadingMessage = "Authenticating...";
       
-      fetch('https://itsfuad.pythonanywhere.com/', {
+      fetch('https://proxy-server-el2s.onrender.com', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
