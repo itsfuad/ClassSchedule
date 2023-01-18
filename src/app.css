@@ -6,7 +6,7 @@
 
 @font-face {
   font-family: Now;
-  src: url("./assets/now-web.woff2");
+  src: url("/fonts/now-web.woff2");
 }
 body {
   font-family: "Now";
@@ -19,6 +19,10 @@ body {
   min-height: 100vh;
   min-width: 100vw;
   position: relative;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
 }
 
 #app {
@@ -67,11 +71,6 @@ canvas {
 
 #charts:empty {
   display: none;
-}
-
-input, select, option {
-  cursor: pointer;
-  min-height: 35px;
 }
 
 button {

@@ -2,258 +2,44 @@
   // @ts-nocheck
 
   import { onMount } from "svelte";
-  import { fly, fade } from "svelte/transition";
-  import { COURSES, titleCase } from "./courses.js";
-  import { ROOMS } from "./rooms.js";
+  import { fly } from "svelte/transition";
+  import { Colors } from "./assets/metadata";
+  import Logo from "./Logo.svelte";
 
   console.log("%cmain.js loaded", "color: green;");
 
-  let READY = false;
+  let LOGGED_IN = false;
+  let selectedSemester;
+  let loadingMessage = '';
 
   onMount(() => {
     console.log("%cApp mounted", "color: green;");
 
-    addCourse = function () {
-      if (!selectedDay) {
-        errLog("Please select a day");
-        return;
-      } else {
-        const temp = titleCase(selectedDay);
-        if (!DAYS.includes(temp)) {
-          errLog("Please select a valid day");
-          return;
-        }
-      }
-      if (!selectedCourse) {
-        errLog("Please select a course");
-        return;
-      } else {
-        const temp = titleCase(selectedCourse);
-        if (!COURSES.includes(temp)) {
-          errLog("Please select a valid course");
-          return;
-        }
-      }
-      if (!selectedRoom) {
-        errLog("Please select a room");
-        return;
-      } else {
-        const temp = selectedRoom;
-        if (!ROOMS.includes(temp)) {
-          errLog("Please select a valid room");
-          return;
-        }
-      }
-      if (!selectedTimeStart) {
-        errLog("Please select a start time");
-        return;
-      }
-      if (!selectedTimeEnd) {
-        errLog("Please select an end time");
-        return;
-      }
+    const dataAvailable = localStorage.getItem("data")?.split('|');
+    const sm = localStorage.getItem("sm");
 
-      const [selectedTimeStartRange, selectedTimeEndRange] = timeParser(
-        `${selectedTimeStart} - ${selectedTimeEnd}`
-      );
-
-      let valid = true;
-
-      valid = validateTimeRange(selectedTimeStartRange, selectedTimeEndRange);
-
-      if (!valid) {
-        return;
-      }
-
-      errorClass = "";
-
-      const time = `${selectedTimeStart} - ${selectedTimeEnd}`;
-
-      console.log(time, __DATA__, selectedDay);
-
-      valid = checkTimeClashes(__DATA__, time, selectedDay, selectedCourse);
-
-      if (!valid) {
-        return;
-      }
-
-      if (valid) {
-        //update the display
-
-        const li = document.createElement("li");
-        li.classList.add("course");
-        li.setAttribute("data-day", selectedDay);
-        li.setAttribute("data-time", time);
-        const id = crypto.randomUUID();
-        li.id = id;
-
-        const deleteBtn = document.createElement("i");
-        deleteBtn.classList.add("fa-solid", "fa-trash", "delete-btn");
-        deleteBtn.setAttribute("title", "Delete course");
-        deleteBtn.style.color = "indianred";
-        deleteBtn.style.padding = "0 5px";
-        deleteBtn.style.cursor = "pointer";
-        deleteBtn.style.fontSize = "0.9rem";
-
-        li.textContent = `${selectedCourse} on ${selectedDay} [${timeConverter(
-          time
-        )}][${selectedRoom}]`;
-        li.appendChild(deleteBtn);
-
-        coursesAddedList.appendChild(li);
-
-        if (!__DATA__[selectedDay]) {
-          __DATA__[selectedDay] = {};
-        }
-
-        __DATA__[selectedDay][time] = [selectedCourse, selectedRoom];
-
-        console.log("%cCourse added", "color: deepskyblue;");
-      } else {
-        console.log("%cError adding course", "color: red;");
-      }
-    };
-
-    const dataAvailable = localStorage.getItem("data");
     if (dataAvailable) {
-      const parsedData = JSON.parse(dataAvailable);
-      if (Object.keys(parsedData).length > 0) {
-        if (validateData(parsedData)) {
-          console.log("%cData loaded", "color: deepskyblue;");
-          __DATA__ = parsedData;
-          loadData();
-        } else {
-          console.log("%cInvalid data found", "color: red;");
-          localStorage.removeItem("data");
-          __DATA__ = {};
-        }
+      const parsedData = JSON.parse(atob(dataAvailable[0]));
+      if (Object.keys(parsedData).length > 0 && sm != 'null' && sm != '' && sm != null) {
+        console.log("%cData loaded", "color: deepskyblue;");
+        LOGGED_IN = true;
+        SELECTION_PANEL = false;
+        __DATA__ = parsedData;
+        User = titleCase(atob(dataAvailable[1]));
+        selectedSemester = atob(sm);
+        loadData();
       } else {
-        console.log("%cInvalid data found", "color: red;");
+        console.log("%cIncomplete data found", "color: red;");
         localStorage.removeItem("data");
+        localStorage.removeItem("sm");
         __DATA__ = {};
       }
     } else {
-      console.log("%cNo data found", "color: deepskyblue;");
+      console.log("%cNo data found", "color: red;");
       //change the title
-      document.title = "Select Courses";
+      document.title = "Login";
     }
   });
-
-  /**
-   * 
-   * @param {number} start
-   * @param {number} end
-   */
-  function validateTimeRange(start, end) {
-    if (start > end) {
-      errLog("Start time must be before end time");
-      console.log("%cStart time must be before end time", "color: red;");
-      //console.log('%cStart time: ' + start, 'color: orangered;');
-      //console.log('%cEnd time: ' + end, 'color: orangered;');
-      return false;
-    }
-    if (start == end) {
-      errLog("Start time and end time cannot be the same");
-      console.log(
-        "%cStart time and end time cannot be the same",
-        "color: red;"
-      );
-      //console.log('%cStart time: ' + start, 'color: orangered;');
-      //console.log('%cEnd time: ' + end, 'color: orangered;');
-      return false;
-    }
-    if (end - start < 60) {
-      errLog(
-        "Courses should have at least 1 lecture hour.\nRe check time range."
-      );
-      console.log("Course less than an hour");
-      return false;
-    }
-    if (start < 480 || start > 1080) {
-      errLog("Start time must be between 8:00 AM and 6:00 PM");
-      console.log(
-        "%cStart time must be between 8:00 AM and 6:00 PM",
-        "color: red;"
-      );
-      //console.log('%cStart time: ' + start, 'color: orangered;');
-      //console.log('%cEnd time: ' + end, 'color: orangered;');
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * @param {object} data
-   * @param {string} customTime
-   * @param {string} customDay
-   * @param {string} customCourse
-  */
-  function checkTimeClashes(
-    data,
-    customTime = null,
-    customDay = null,
-    customCourse = null
-  ) {
-    if (customTime && !customDay) {
-      throw new Error("Day not provided");
-    }
-    let _counterCond = 0;
-    if (!customTime) {
-      _counterCond = 1;
-    }
-
-    for (let day in data) {
-      if (customDay && customDay !== day) continue;
-      let times = Object.keys(data[day]);
-
-      for (let i = 0; i < times.length; i++) {
-        for (let j = i + _counterCond; j < times.length; j++) {
-          if (
-            customCourse &&
-            (data[day][times[i]][0] === customCourse ||
-              data[day][times[j]][0] === customCourse)
-          ) {
-            console.log("Course already added");
-            errLog("Course already taken");
-            return false;
-          }
-
-          let [start1, end1] = timeParser(times[i]);
-          let [start2, end2] = timeParser(times[j]);
-
-          if (customTime) {
-            [start1, end1] = timeParser(customTime);
-          }
-          if (
-            (start1 >= start2 && start1 < end2) ||
-            (start2 >= start1 && start2 < end1)
-          ) {
-            let errorText;
-            if (customCourse) {
-              errorText = `Time clash with ${
-                data[day][times[j]][0]
-              } [${timeConverter(times[j])}]`;
-            } else if (!customTime && !customDay && !customCourse) {
-              errorText = `Time clash on ${day}, between ${
-                data[day][times[i]][0]
-              } [${timeConverter(times[i])}] and ${data[day][times[j]][0]} [${
-                times[j]
-              }].\nPlease select time correctly.`;
-            } else {
-              errorText = `Time clash with ${
-                data[day][times[j]][0]
-              } [${timeConverter(times[j])}]`;
-            }
-            console.log(errorText);
-            errLog(errorText);
-            return false;
-          }
-        }
-      }
-    }
-    //console.log("Free slot");
-    return true;
-  }
 
   /**
    * @param {string} timeRange
@@ -271,48 +57,11 @@
     return [startMinutes, endMinutes];
   }
 
-  //24h to 12h time
-  /**
-   * @param {string} time
-   * @returns {string}
-   */
-  function timeConverter(time) {
-    if (!time) {
-      return "";
-    }
-    const timeRange = time.split("-");
-    const timeStart = timeRange[0].trim().split(":");
-    const timeStartValue = parseInt(timeStart[0]) * 60 + parseInt(timeStart[1]);
-    const timeEnd = timeRange[1].trim().split(":");
-    const timeEndValue = parseInt(timeEnd[0]) * 60 + parseInt(timeEnd[1]);
-    const timeStart12h =
-      timeStartValue < 720
-        ? `${timeStart[0].toString().padStart(2, "0")}:${timeStart[1]
-            .toString()
-            .padStart(2, "0")} AM`
-        : `${
-            timeStart[0] == 12
-              ? timeStart[0].toString().padStart(2, "0")
-              : (timeStart[0] - 12).toString().padStart(2, "0")
-          }:${timeStart[1].toString().padStart(2, "0")} PM`;
-    const timeEnd12h =
-      timeEndValue < 720
-        ? `${timeEnd[0].toString().padStart(2, "0")}:${timeEnd[1]
-            .toString()
-            .padStart(2, "0")} AM`
-        : `${
-            timeEnd[0] == 12
-              ? timeEnd[0].toString().padStart(2, "0")
-              : (timeEnd[0] - 12).toString().padStart(2, "0")
-          }:${timeEnd[1].toString().padStart(2, "0")} PM`;
-    return `${timeStart12h} - ${timeEnd12h}`;
-  }
-
-  let addCourse;
   let errorText,
     errorClass = "";
 
   let charts;
+  
   let __DATA__ = {};
 
   const colors = {
@@ -320,18 +69,9 @@
     Break: "#077518",
   };
 
-  const colorsArray = [
-    "#405b91",
-    "#1d8ad3",
-    "#d34f1d",
-    "#d3251d",
-    "#009169",
-    "#008a91",
-    "#064491",
-    "#7d12df",
-    "#df1241",
-    "#4d6a59",
-  ];
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday"];
+
+  let colorsArray = [...Colors];
 
   let canvasResolution = 1080;
 
@@ -347,34 +87,36 @@
 
   function loadData() {
     if (Object.keys(__DATA__).length == 0) {
-      errLog("Empty form");
+      errLog("No data found");
       return;
     }
 
     if (!localStorage.getItem("data")) {
-      localStorage.setItem("data", JSON.stringify(__DATA__));
+      localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
       console.log("%cData saved", "color: deepskyblue;");
     }
     document.title = "Your Schedule";
+
+    SELECTION_PANEL = false;
+
     init();
   }
 
   function init() {
+    console.log(SELECTION_PANEL, LOGGED_IN);
     console.log("%cInitializing Charts", "color: deepskyblue;");
-    READY = true;
-
+    localStorage.setItem("sm", btoa(selectedSemester));
     //sort data by day sunday - wednesday
     const data = {};
-
+    charts.innerHTML = '';
+    colorsArray = [...Colors];
     for (let i = 0; i < DAYS.length; i++) {
-      if (__DATA__[DAYS[i]]) {
-        data[DAYS[i]] = __DATA__[DAYS[i]];
+      if (__DATA__[selectedSemester][DAYS[i]]) {
+        data[DAYS[i]] = __DATA__[selectedSemester][DAYS[i]];
       }
     }
 
-    __DATA__ = data;
-
-    Object.keys(__DATA__).forEach((day) => {
+    Object.keys(data).forEach((day) => {
       const canvas = document.createElement("canvas");
       charts.appendChild(canvas);
       const ctx = canvas.getContext("2d");
@@ -398,8 +140,8 @@
       ctx.fillStyle = "#111d2a";
       ctx.fill();
 
-      Object.keys(__DATA__[day]).forEach(async (time) => {
-        draw(day, time, ctx, xCord, yCord, radius);
+      Object.keys(data[day]).forEach(async (time) => {
+        draw(data, day, time, ctx, xCord, yCord, radius);
       });
 
       //write the day name
@@ -438,31 +180,17 @@
    * @param {number} yCord
    * @param {number} radius
    */
-  function draw(day, time, ctx, xCord, yCord, radius) {
-    const courseInfo = __DATA__[day][time];
-    const courseName = courseInfo[0];
+  function draw(data, day, time, ctx, xCord, yCord, radius) {
+    const courseInfo = data[day][time];
+    const courseName = courseInfo['course_name'];
 
     if (!colors[courseName]) {
       const color = chooseColor();
       colors[courseName] = color;
     }
 
-    //extract the start time and end time from '1:00 PM - 2:15 PM' format
-    const startTime = time.split(" - ")[0].trim();
-    const endTime = time.split(" - ")[1].trim();
-
-    //convert 24 hour time to 12 hour time with am pm
-    const start = convertTime(startTime);
-    const end = convertTime(endTime);
-
-    const timeRange = `${start} - ${end}`;
-
-    let startMinutes =
-      parseInt(startTime.split(":")[0]) * 60 +
-      parseInt(startTime.split(":")[1]);
-    let endMinutes =
-      parseInt(endTime.split(":")[0]) * 60 + parseInt(endTime.split(":")[1]);
-
+    let [startMinutes, endMinutes] = timeParser(time);
+      
     // fill area between start and end time
     const startAngle = ((startMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
     const endAngle = ((endMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
@@ -478,7 +206,7 @@
     );
     writeLabel(
       courseInfo,
-      timeRange,
+      time,
       startAngle,
       endAngle,
       ctx,
@@ -488,22 +216,6 @@
     );
   }
 
-  /**
-   * @param {string} time
-   * @returns {string}
-   * @example convertTime('13:00') -> '1:00 PM'
-   */
-  function convertTime(time) {
-    const hour = parseInt(time.split(":")[0]);
-    const minutes = parseInt(time.split(":")[1]);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    //return `${hour12}:${minutes} ${ampm}`;
-    //add 0 before hour and minutes if it is less than 10, eg. 1:5 PM -> 01:05 PM with the padsStart method
-    return `${hour12.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")} ${ampm}`;
-  }
 
   /**
    * @param {number} startAngle
@@ -554,13 +266,13 @@
     ctx.font = `${font_size / 2.5}px Arial`;
     ctx.textAlign = "center";
     ctx.fillText(
-      courseInfo[0],
+      `${courseInfo['course_name']} [${courseInfo['section']}]`,
       xCord + radius * Math.cos((startAngle + endAngle) / 2),
       yCord + radius * Math.sin((startAngle + endAngle) / 2)
     );
-    if (courseInfo[1]) {
+    if (courseInfo) {
       ctx.fillText(
-        courseInfo[1],
+        `${courseInfo['room']}`,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
         yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
       );
@@ -578,329 +290,193 @@
     }
   }
 
-  function reset() {
-    errorClass = "";
-    errorText = "";
-  }
+  let username;
+  let password;
 
-  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday"];
-
-  let selectedCourse,
-    selectedDay,
-    selectedRoom,
-    selectedTimeStart,
-    selectedTimeEnd;
-
-  let coursesAddedList;
-
-  /**
-   * @param {event} evt
-  */
-  function handleDeleteCourse(evt) {
-    //if the target is not the ul element
-    if (evt.target == coursesAddedList) {
-      return;
-    }
-    const course = evt.target?.closest(".course");
-    if (course) {
-      const day = course.dataset.day;
-      const time = course.dataset.time;
-      if (__DATA__[day]) {
-        course.remove();
-        course.remove();
-        delete __DATA__[day][time];
-        if (Object.keys(__DATA__[day]).length == 0) {
-          delete __DATA__[day];
-        }
-        console.log("%cCourse Deleted", "color: red;");
-      }
+  function handleEnter(event) {
+    if (event.key === "Enter") {
+      login();
     }
   }
 
-  function download() {
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(__DATA__));
-    const downloadAnchorNode = document.createElement("a");
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "schedule.json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  }
-
-  let importedFiles;
-
-  /**
-   * 
-   * @param {object} data
-   */
-  function validateData(data) {
-    if (!data) {
-      errLog("No Data");
-      console.log("%cNo Data", "color: red;");
+  function sanitizeInput(username, password) {
+    //username: example 22-49355-3
+    //password: any valid
+    const usernameRegex = /^\d{2}-\d{5}-\d$/;
+    const passwordRegex = /^.{1,}$/;
+    if (!usernameRegex.test(username)) {
+      errLog("Invalid Username");
       return false;
     }
-    let valid = true;
-    Object.keys(data).forEach((day) => {
-      if (!DAYS.includes(day)) {
-        errLog(`Invalid Day: ${day}`);
-        //console.log('%cInvalid Day: ' + day, 'color: red;');
-        valid = false;
-      }
-
-      if (valid) {
-        Object.keys(data[day]).forEach((time) => {
-          if (!valid) {
-            return;
-          }
-
-          const [convertedTimeStartRange, convertedTimeEndRange] =
-            timeParser(time);
-
-          /*
-          console.log('%cValidating time range', 'color: deepskyblue;');
-          console.log('%cStart time: ' + convertedTimeStartRange, 'color: deepskyblue;');
-          console.log('%cEnd time: ' + convertedTimeEndRange, 'color: deepskyblue;');
-          console.log('Selected day: ' + day);
-          console.log('Selected course: ' + data[day][time]);
-          */
-
-          valid = validateTimeRange(
-            convertedTimeStartRange,
-            convertedTimeEndRange
-          );
-          if (!valid) {
-            return;
-          }
-          //console.log('time range: ' + valid);
-
-          const course = data[day][time];
-          if (!course) {
-            valid = false;
-            console.log("%cNo Course", "color: red;");
-            return;
-          } else {
-            if (!COURSES.includes(course[0])) {
-              errLog(`Invalid Course: ${course[0]}`);
-              console.log("%cInvalid Course: " + course[0], "color: red;");
-              valid = false;
-              return;
-            }
-          }
-
-          valid = checkTimeClashes(data);
-          if (!valid) {
-            return;
-          }
-
-          //console.log('time clash: ' + valid)
-          if (!ROOMS.includes(course[1])) {
-            errLog(`Invalid Room: ${course[1]}`);
-            console.log("%cInvalid Room: " + course[1], "color: red;");
-            valid = false;
-            return;
-          }
-        });
-      }
-    });
-    return valid;
+    if (!passwordRegex.test(password)) {
+      errLog("Invalid Password");
+      return false;
+    }
+    return true;
   }
 
-  function loadFile() {
-    try {
-      if (importedFiles) {
-        const file = importedFiles.files[0];
-        //if file is not json
-        if (file.type != "application/json") {
-          console.log("%cFile is not a json file", "color: red;");
-          errLog("File is not a json file");
-          importedFiles.value = "";
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const text = e.target.result;
-          const tempData = JSON.parse(text);
-          if (validateData(tempData)) {
-            __DATA__ = tempData;
-            console.log("%cFile Loaded", "color: green;");
-            importedFiles.value = "";
-            loadData();
+  let User = '';
+  let SELECTION_PANEL = false;
+
+  function login(){
+    if (!username || !password) {
+      errLog("Please fill up the form");
+      return;
+    }
+    else if(sanitizeInput(username, password)){
+      
+      loadingMessage = "Please wait";
+      
+      fetch('http://127.0.0.1:5000', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        },
+        credentials: 'include',
+        body: `UserName=${username}&Password=${password}`,
+      })
+        .then((r) => {
+          if (r.status === 200) {
+            r.json().then(data => {
+              loadingMessage = "";
+              LOGGED_IN = true;
+              SELECTION_PANEL = true;
+              User = titleCase(data.user);
+              __DATA__ = data.data;
+              username = '';
+              password = '';
+              errorText = '';
+            }).catch(err => {
+              console.log(err);
+              errLog("Something went wrong reading response");
+              loadingMessage = "";
+            });
           } else {
-            importedFiles.value = "";
-            return;
+            r.text().then(data => {
+              errLog(data);
+              loadingMessage = "";
+            }).catch(err => {
+              console.log(err);
+              errLog("Something went wrong reading response");
+              loadingMessage = "";
+            });
           }
-        };
-        reader.readAsText(file);
-      }
-    } catch (e) {
-      console.log("%cFile contains invalid data", "color: red;");
-      errLog("File contains invalid data");
-      importedFiles.value = "";
+        })
+        .catch((err) => {
+          console.log(err);
+          errLog("Something went wrong");
+          loadingMessage = "";
+        });
+        
     }
   }
+
+  function clear(){
+    localStorage.removeItem("sm");
+    localStorage.removeItem("data");
+    User = '';
+    __DATA__ = {};
+    SELECTION_PANEL = false;
+    LOGGED_IN = false;
+    while(charts.firstChild){
+      charts.removeChild(charts.firstChild);
+    }
+  }
+
+  /**
+ * @param {string} str
+ * @returns {string}
+ */
+function titleCase(str) {
+    const temp = str.toLowerCase().split(' ');
+    for (var i = 0; i < temp.length; i++) {
+        temp[i] = temp[i].charAt(0).toUpperCase() + temp[i].slice(1); 
+    }
+    return temp.join(' ');
+}
+
 </script>
 
-<div class="container">
-  <div id="charts" bind:this={charts} />
-
-{#if !READY}
-  <div id="coursesDisplay">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <ul
-      class="courses"
-      bind:this={coursesAddedList}
-      on:click={handleDeleteCourse}
-    />
-    <label for="coursesDisplay" id="clb"
-      >Added Courses <i class="fa-solid fa-puzzle-piece" /></label
-    >
+{#if loadingMessage}
+  <div class="load-message">
+    <div class="text">{loadingMessage}</div>
+    <i class="fa-solid fa-circle-notch fa-spin"></i>
   </div>
-  <div class="form" in:fly={{ y: 50, duration: 300}} out:fade>
+{/if}
+
+<div class="container">
+
+{#if LOGGED_IN}
+<div class="header">
+    <div class="sem">
+      <i class="fa-solid fa-tree"></i> {selectedSemester} <button on:click={()=>{
+        SELECTION_PANEL = true;
+      }}><i class="fa-solid fa-caret-down"></i></button>
+    </div>
+    <div class="user">
+      <i class="fa-solid fa-user"></i> {User}
+    </div>
+</div>
+{/if}
+
+<div id="charts" bind:this={charts}></div>
+
+{#if !LOGGED_IN}
+  <div class="form login-form" in:fly={{ y: 50, duration: 300}}>
     <div class="errLog {errorClass}">{errorText}</div>
     <div class="title mid">
-      Select your courses and times <i class="fa-solid fa-calendar-days" />
+      <Logo/> Login with AIUB id <i class="fa-solid fa-id-card"></i>
     </div>
 
     <div class="form-field">
       <input
-        list="day"
-        class="dropdown-list"
-        bind:value={selectedDay}
-        on:change={reset}
-        placeholder=" - Select day - "
+        type="text"
+        id="username"
+        name="UserName"
+        placeholder="Username"
+        bind:value={username}
+        on:keydown={handleEnter}
       />
-      <datalist name="day" id="day">
-        {#each DAYS as day}
-          <option class="list-item" value={day}>{day}</option>
-        {/each}
-      </datalist>
     </div>
 
     <div class="form-field">
       <input
-        list="course"
-        class="dropdown-list"
-        bind:value={selectedCourse}
-        on:change={reset}
-        placeholder=" - Select course - "
-      />
-      <datalist name="course" id="course">
-        {#each COURSES as course}
-          <option class="list-item" value={course}>{course}</option>
-        {/each}
-      </datalist>
-    </div>
-
-    <div class="form-field">
-      <input
-        list="room"
-        class="dropdown-list"
-        bind:value={selectedRoom}
-        on:change={reset}
-        placeholder=" - Select room - "
-      />
-      <datalist name="room" id="room">
-        {#each ROOMS as room}
-          <option class="list-item" value={room}>{room}</option>
-        {/each}
-      </datalist>
-    </div>
-
-    <div class="form-group backgound padding">
-      <div class="form-field">
-        <label title="Choose time when class starts" for="time" class="title small">Class starts</label>
-        <input
-          type="time"
-          name="courseTime"
-          id="time-start"
-          bind:value={selectedTimeStart}
-          on:change={reset}
-        />
-      </div>
-
-      <div class="form-field">
-        <label title="Choose time when class ends" for="time" class="title small">Class ends</label>
-        <input
-          type="time"
-          name="courseTime"
-          id="time-end"
-          bind:value={selectedTimeEnd}
-          on:change={reset}
-        />
-      </div>
-    </div>
-
-    <div class="form-group">
-      <button title="Add selected course to the list" class="addButton" on:click={addCourse}
-        >Add <i class="fa-solid fa-circle-plus" /></button
-      >
-      <button
-        title="Clear input data from form"
-        class="clear"
-        on:click={() => {
-          selectedDay = "";
-          selectedCourse = "";
-          selectedRoom = "";
-          selectedTimeStart = "";
-          selectedTimeEnd = "";
-
-          if (importedFiles?.files?.length > 0) {
-            importedFiles.value = "";
-          }
-
-          reset();
-        }}>Clear <i class="fa-solid fa-trash" /></button
-      >
-      <button class="finishButton" title="Show charts based on data" on:click={loadData}
-        >Finish <i class="fa-solid fa-check" /></button
-      >
-    </div>
-
-    <div class="form-field">
-      <!-- import from file -->
-      <div class="or">Or</div>
-      <label for="file" title="Import data from existing file" id="fileImportLabel">Import from file</label>
-      <input
-        type="file"
-        id="file"
-        accept=".json"
-        on:change={loadFile}
-        bind:this={importedFiles}
+        type="password"
+        id="password"
+        name="Password"
+        placeholder="Password"
+        bind:value={password}
+        on:keydown={handleEnter}
       />
     </div>
-  </div>
-  {:else}
-  <div class="form-group margin">
-    <button class="export" title="Download data on local device" on:click={download}>Export Data</button>
-    <button title="Clear all data"
-      class="clear reset"
-      on:click={() => {
-        while (charts.firstChild) {
-          charts.removeChild(charts.firstChild);
-        }
 
-        selectedDay = "";
-        selectedCourse = "";
-        selectedRoom = "";
-        selectedTimeStart = "";
-        selectedTimeEnd = "";
-        
-        if (importedFiles?.files?.length > 0) {
-          importedFiles.value = "";
-        }
+    <button type="submit" on:click={login} class="btn">
+      Login <i class="fa-solid fa-sign-in" />
+    </button>
 
-        __DATA__ = {};
-        
-        localStorage.removeItem("data");
-
-        READY = false;
-      }}>Clear Data</button
-    >
   </div>
   {/if}
-
+  {#if SELECTION_PANEL}
+  <div class="selection-container">
+    <div class="form" id="selection-panel" in:fly={{ y: 50, duration: 300}}>
+      <div class="title after-login">
+        <i class="fa-solid fa-user"></i> {User}
+      </div>
+      <div class="form-field">
+        <!--Select semester-->
+        <select name="semester" id="semester" bind:value={selectedSemester}>
+          {#each Object.keys(__DATA__) as semester }
+            <option value="{semester}">{semester}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="button-group">
+        <button id="show-graph" on:click={loadData}>Show Classes</button>
+        <button class="clear-data" on:click={clear}>Clear Data</button>
+      </div>
+    </div>
+  </div>
+  {/if}
 </div>
 
 <a href="https://github.com/itsfuad/ClassSchedule">
@@ -909,46 +485,112 @@
 </a>
   
 <style>
-  #coursesDisplay {
+
+  .login-form .title{
+    font-size: 1.2rem;
     display: flex;
-    flex-direction: column-reverse;
+    align-items: center;
     justify-content: center;
-    align-items: flex-start;
-    gap: 5px;
-    font-size: 0.7rem;
-    padding: 10px 20px;
-    border-radius: 10px;
-    background: rgba(187, 221, 255, 0.096);
-    margin-bottom: 20px;
-    max-width: 90%;
+    gap: 10px;
+    flex-direction: row;
   }
 
-  #clb {
-    font-size: 0.9rem;
-    color: aliceblue;
+  select{
     width: 100%;
+    height: 35px;
+    background: rgb(26, 121, 209);
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    color: aliceblue;
     text-align: center;
-    position: relative;
-    display: none;
   }
+
+  .button-group{
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  .clear-data{
+    background: red;
+  }
+
+  .header{
+    position: sticky;
+    top: 0;
+    width: 100%;
+    padding: 10px;
+    z-index: 10;
+    background: #111d2a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user{
+    font-size: 1.2rem;
+  }
+
+  .sem{
+    color: #10ffbd;
+  }
+
+  .sem button{
+    margin: 0;
+    padding: 2px 5px;
+    background: rgb(57 68 80);
+  }
+
+  .selection-container{
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #263646;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title.after-login{
+    color: #bdcddf;
+    font-size: 0.9rem;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background: none;
+    color: rgb(233, 233, 233);
+    border-bottom: rgb(26, 121, 209) 2px solid;
+    font-size: 1em;
+    outline: none;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: aliceblue;
+    -webkit-box-shadow: 0 0 0rgb(255, 255, 255)00px transparent inset;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: aliceblue;
+  }
+
 
   .course {
     color: rgb(233, 233, 233);
-  }
-
-  ul {
-    list-style: none;
-  }
-
-  #coursesDisplay .courses:empty::after {
-    content: "No courses added";
-    width: 100%;
-    text-align: center;
-    color: #f0f8ff6e;
-  }
-
-  .courses:not(:empty) + #clb {
-    display: block;
   }
 
   .errLog {
@@ -960,6 +602,24 @@
     opacity: 0;
     display: none;
     position: relative;
+  }
+
+  .load-message{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    color: aliceblue;
   }
 
   .shake {
@@ -1026,64 +686,9 @@
     color: #f0f8ff6e;
   }
 
-  .list-item {
-    background: rgb(26, 121, 209);
-    color: white;
-    border: none;
-    outline: none;
-    padding: 5px;
-  }
-
-  .or {
-    color: rgba(187, 221, 255, 0.336);
-    position: relative;
-  }
-
-  .or::after,
-  .or::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: -110px;
-    width: 100px;
-    height: 2px;
-    transform: translateY(-50%);
-    background: rgba(187, 221, 255, 0.336);
-  }
-
   .or::before {
     left: unset;
     right: -110px;
-  }
-
-  #fileImportLabel {
-    cursor: pointer;
-    padding: 5px;
-    color: rgb(26, 121, 209);
-    text-decoration: underline;
-    outline: none;
-    border: none;
-    border-radius: 5px;
-  }
-  #fileImportLabel:hover {
-    color: rgb(26, 121, 209, 0.8);
-  }
-
-  #file {
-    display: none;
-  }
-
-  input[type="time"] {
-    padding: 5px;
-    background: rgb(26, 121, 209);
-    color: white;
-    outline: none;
-    border: none;
-    border-radius: 5px;
-  }
-  /*time icon color*/
-  input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
   }
 
   ::selection {

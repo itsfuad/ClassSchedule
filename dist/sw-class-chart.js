@@ -27,15 +27,19 @@ self.addEventListener('activate', (e) => {
 //Call fetch event
 self.addEventListener('fetch', e=> {
 	console.log('Service Worker: Fetching');
-	e.respondWith(
-		fetch(e.request)
-		.then(res => {
-			const resClone = res.clone();
-			caches.open(cacheName)
-			.then(cache => {
-				cache.put(e.request, resClone);
-			});
-			return res;
-		}).catch(err => caches.match(e.request).then(res => res))
-	);
+	try{
+		e.respondWith(
+			fetch(e.request)
+			.then(res => {
+				const resClone = res.clone();
+				caches.open(cacheName)
+				.then(cache => {
+					cache.put(e.request, resClone);
+				});
+				return res;
+			}).catch(err => caches.match(e.request).then(res => res))
+		);
+	}catch(err){
+		console.log(err);
+	}
 });
