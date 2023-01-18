@@ -327,7 +327,7 @@
       
       loadingMessage = "Please wait";
       
-      fetch('http://itsfuad.pythonanywhere.com/', {
+      fetch('https://itsfuad.pythonanywhere.com/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
