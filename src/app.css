@@ -10,7 +10,7 @@
 }
 body {
   font-family: "Now";
-  background-color: #111d2a;
+  background-color: rgb(13, 40, 58);
   color: aliceblue;
   display: flex;
   flex-direction: column;
@@ -46,73 +46,14 @@ body {
   z-index: 1;
 }
 
-#charts {
-  overflow: scroll;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  gap: 40px;
-  min-height: 80vh;
-  width: 100%;
-  position: relative;
+canvas {
+  background: rgb(21, 49, 68);
+  border-radius: 20px;
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.1882352941);
 }
 
 ::-webkit-scrollbar {
   width: 0;
-}
-
-canvas {
-  background: rgba(255, 255, 255, 0.034);
-  border-radius: 20px;
-}
-
-#charts:empty {
-  display: none;
-}
-
-button {
-  margin-top: 20px;
-  padding: 10px 15px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 5px;
-  background: rgb(26, 121, 209);
-  color: aliceblue;
-  cursor: pointer;
-}
-button:hover {
-  background: rgb(20, 112, 199);
-}
-
-.finishButton {
-  margin-top: 20px;
-  padding: 10px 15px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 5px;
-  background: rgb(15, 196, 126);
-  color: aliceblue;
-  cursor: pointer;
-}
-.finishButton:hover {
-  background: rgb(10, 186, 116);
-}
-
-.clear {
-  margin-top: 20px;
-  padding: 10px 15px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 5px;
-  background: rgb(226, 6, 6);
-  color: aliceblue;
-  cursor: pointer;
-}
-.clear:hover {
-  background: rgb(216, 0, 0);
 }
 
 .margin {

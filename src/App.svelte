@@ -13,16 +13,17 @@
   let User = '';
   let selectedSemester;
   let loadingMessage = '';
+  let proxyServerReady = false;
 
   onMount(() => {
     console.log("%cApp mounted", "color: green;");
 
     const dataAvailable = localStorage.getItem("data")?.split('|');
     const sm = localStorage.getItem("sm");
-    __DATA__ = JSON.parse(atob(dataAvailable[0]));
-
+    
     if (dataAvailable) {
       User = titleCase(atob(dataAvailable[1]));
+      __DATA__ = JSON.parse(atob(dataAvailable[0]));
       if (Object.keys(__DATA__).length > 0 && sm != 'null' && sm != '' && sm != null) {
         console.log("%cData loaded", "color: deepskyblue;");
         LOGGED_IN = true;
@@ -39,7 +40,20 @@
       console.log("%cNo data found", "color: red;");
       //change the title
       document.title = "Login";
-      fetch('https://proxy-server-el2s.onrender.com');
+      fetch('https://proxy-server-el2s.onrender.com').then(res => {
+        if(res.status == 200) {
+          proxyServerReady = true;
+          if (errorText == "Proxy Server is sleeping\nWaking up...") {
+            errorText = "Proxy Server is ready";
+            errorClass = "success";
+          }
+        }
+      });
+      setTimeout(() => {
+        if (!proxyServerReady) {
+          errorText = "Proxy Server is sleeping\nWaking up...";
+        }
+      }, 3000);
     }
   });
 
@@ -59,7 +73,7 @@
     return [startMinutes, endMinutes];
   }
 
-  let errorText,
+  let errorText = "",
     errorClass = "";
 
   let charts;
@@ -85,7 +99,7 @@
     canvasSize = document.body.clientHeight * 0.7;
   }
 
-  const font_size = canvasResolution / 16;
+  const font_size = canvasResolution / 14;
 
   function loadData() {
     if (Object.keys(__DATA__).length == 0) {
@@ -139,7 +153,7 @@
       ctx.beginPath();
       ctx.arc(xCord, yCord, radius, 0, (360 * Math.PI) / 180);
       ctx.lineTo(xCord, yCord);
-      ctx.fillStyle = "#111d2a";
+      ctx.fillStyle = "#0f2636";
       ctx.fill();
 
       Object.keys(data[day]).forEach(async (time) => {
@@ -151,7 +165,7 @@
       ctx.font = `${font_size}px Arial`;
       ctx.textAlign = "center";
 
-      ctx.fillText(day, xCord, font_size * 2);
+      ctx.fillText(day, xCord, canvas.height - font_size);
     });
   }
 
@@ -274,7 +288,7 @@
     );
     if (courseInfo) {
       ctx.fillText(
-        `${courseInfo['room']}`,
+        `Room: ${courseInfo['room']} [${courseInfo['type']}]`,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
         yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
       );
@@ -287,7 +301,7 @@
       ctx.fillText(
         Time,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
+        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size * 2
       );
     }
   }
@@ -337,20 +351,16 @@
 
     else if(sanitizeInput(username, password)){
       
-      loadingMessage = "Please wait...";
+      if (!proxyServerReady) {
+        errorText = "Proxy Server is sleeping\nWaking up...";
+        return;
+      }
 
-      //the proxy server might go sleep after 30 minutes of inactivity, so we need to wake it up
-      //by sending a request to it
-      fetch('https://proxy-server-el2s.onrender.com')
-      .then(r => {
-        if(r.status === 200){
-          //now we can send the actual request
-          loadingMessage = "Trying fetch request...";
-        }
-        else{
-          errLog("Something went wrong");
-        }
-      })
+      loadingMessage = "Authenticating...";
+
+      setTimeout(() => {
+        loadingMessage = "Fetching data...";
+      }, 2000);
       
       fetch('https://proxy-server-el2s.onrender.com', {
         method: 'POST',
@@ -375,6 +385,7 @@
               username = '';
               password = '';
               errorText = '';
+              errorClass = '';
             }).catch(err => {
               console.log(err);
               errLog("Something went wrong reading response");
@@ -408,7 +419,18 @@
     SELECTION_PANEL = false;
     LOGGED_IN = false;
     document.title = "Login";
-    fetch('https://proxy-server-el2s.onrender.com');
+
+    proxyServerReady = false;
+    fetch('https://proxy-server-el2s.onrender.com').then(res => {
+      if(res.status == 200) {
+        proxyServerReady = true;
+        if (errorText){
+          errorText = "Ready to go!";
+          errorClass = "success";
+        }
+      }
+    });
+    
     while(charts.firstChild){
       charts.removeChild(charts.firstChild);
     }
@@ -543,17 +565,13 @@ function titleCase(str) {
     gap: 20px;
   }
 
-  .clear-data{
-    background: red;
-  }
-
   .header{
     position: sticky;
     top: 0;
     width: 100%;
     padding: 10px;
     z-index: 10;
-    background: #111d2a;
+    background: rgb(13 40 58);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -571,14 +589,14 @@ function titleCase(str) {
   .sem button{
     margin: 0;
     padding: 2px 5px;
-    background: rgb(57 68 80);
+    background: rgb(33 75 104);
   }
 
   .selection-container{
     position: fixed;
     top: 0;
     left: 0;
-    background: #263646;
+    background: rgb(13 40 58);
     width: 100%;
     height: 100%;
     z-index: 100;
@@ -619,6 +637,42 @@ function titleCase(str) {
     caret-color: aliceblue;
   }
 
+    
+  #charts{
+    overflow: scroll;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    gap: 40px;
+    min-height: 80vh;
+    width: 100%;
+    position: relative;
+  }
+
+  #charts:empty{
+    display: none;
+  }
+
+  button{
+    margin-top: 20px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 5px;
+    background: rgb(26, 121, 209);
+    color: aliceblue;
+    cursor: pointer;
+  }
+  button:hover{
+      filter: brightness(0.95);
+  }
+
+  .clear-data{
+    background: rgb(226, 6, 6);
+  }
 
   .course {
     color: rgb(233, 233, 233);
@@ -630,8 +684,6 @@ function titleCase(str) {
     width: 100%;
     word-wrap: break-word;
     white-space: break-spaces;
-    opacity: 0;
-    display: none;
     position: relative;
   }
 
@@ -651,13 +703,17 @@ function titleCase(str) {
     border-radius: 10px;
     backdrop-filter: blur(5px);
     color: aliceblue;
+    white-space: break-spaces;
   }
 
   .shake {
     animation: shake 300ms;
-    opacity: 1;
-    display: block;
   }
+
+  .success{
+    color : limegreen;
+  }
+
   .form {
     position: relative;
     width: 90%;
@@ -666,11 +722,12 @@ function titleCase(str) {
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    background: rgba(187, 221, 255, 0.096);
+    background: rgb(21 49 68);
     border-radius: 10px;
     padding: 20px;
     z-index: 10;
     gap: 10px;
+    box-shadow: 3px 3px 5px #00000030;
   }
 
   .title.large {
