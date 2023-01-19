@@ -9,6 +9,8 @@
   console.log("%cmain.js loaded", "color: green;");
 
   let LOGGED_IN = false;
+  let SELECTION_PANEL = false;
+  let User = '';
   let selectedSemester;
   let loadingMessage = '';
 
@@ -17,27 +19,27 @@
 
     const dataAvailable = localStorage.getItem("data")?.split('|');
     const sm = localStorage.getItem("sm");
+    __DATA__ = JSON.parse(atob(dataAvailable[0]));
 
     if (dataAvailable) {
-      const parsedData = JSON.parse(atob(dataAvailable[0]));
-      if (Object.keys(parsedData).length > 0 && sm != 'null' && sm != '' && sm != null) {
+      User = titleCase(atob(dataAvailable[1]));
+      if (Object.keys(__DATA__).length > 0 && sm != 'null' && sm != '' && sm != null) {
         console.log("%cData loaded", "color: deepskyblue;");
         LOGGED_IN = true;
         SELECTION_PANEL = false;
-        __DATA__ = parsedData;
-        User = titleCase(atob(dataAvailable[1]));
         selectedSemester = atob(sm);
         loadData();
-      } else {
-        console.log("%cIncomplete data found", "color: red;");
-        localStorage.removeItem("data");
-        localStorage.removeItem("sm");
-        __DATA__ = {};
+      } else if(Object.keys(__DATA__).length > 0) {
+        console.log("%cSemester was not choosen", "color: red;");
+        document.title = `Welcome ${User.split('[')[0]}`;
+        LOGGED_IN = true;
+        SELECTION_PANEL = true;
       }
     } else {
       console.log("%cNo data found", "color: red;");
       //change the title
       document.title = "Login";
+      fetch('https://proxy-server-el2s.onrender.com');
     }
   });
 
@@ -93,8 +95,9 @@
 
     if (!localStorage.getItem("data")) {
       localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
-      console.log("%cData saved", "color: deepskyblue;");
+      console.log("%cData Updated", "color: limegreen;");
     }
+
     document.title = "Your Schedule";
 
     SELECTION_PANEL = false;
@@ -103,7 +106,6 @@
   }
 
   function init() {
-    console.log(SELECTION_PANEL, LOGGED_IN);
     console.log("%cInitializing Charts", "color: deepskyblue;");
     localStorage.setItem("sm", btoa(selectedSemester));
     //sort data by day sunday - wednesday
@@ -315,17 +317,40 @@
     return true;
   }
 
-  let User = '';
-  let SELECTION_PANEL = false;
-
   function login(){
-    if (!username || !password) {
-      errLog("Please fill up the form");
+
+    //check if offline
+    if (!navigator.onLine) {
+      errLog("You are offline!\nPlease connect to the internet first.");
       return;
     }
+
+    if (!username) {
+      errLog("Please provide username");
+      return;
+    }
+
+    if (!password) {
+      errLog("Please provide password");
+      return;
+    }
+
     else if(sanitizeInput(username, password)){
       
-      loadingMessage = "Authenticating...";
+      loadingMessage = "Please wait...";
+
+      //the proxy server might go sleep after 30 minutes of inactivity, so we need to wake it up
+      //by sending a request to it
+      fetch('https://proxy-server-el2s.onrender.com')
+      .then(r => {
+        if(r.status === 200){
+          //now we can send the actual request
+          loadingMessage = "Trying fetch request...";
+        }
+        else{
+          errLog("Something went wrong");
+        }
+      })
       
       fetch('https://proxy-server-el2s.onrender.com', {
         method: 'POST',
@@ -341,8 +366,12 @@
               loadingMessage = "";
               LOGGED_IN = true;
               SELECTION_PANEL = true;
-              User = titleCase(data.user);
+              const user_name = titleCase(data.user).split('[');
+              const user_name_arranged = `${user_name[0].split(',')[1]} ${user_name[0].split(',')[0]}`;
+              User = `${user_name_arranged} [${user_name[1]}`;
+              document.title = `Welcome ${user_name_arranged}`;
               __DATA__ = data.data;
+              localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
               username = '';
               password = '';
               errorText = '';
@@ -378,6 +407,8 @@
     __DATA__ = {};
     SELECTION_PANEL = false;
     LOGGED_IN = false;
+    document.title = "Login";
+    fetch('https://proxy-server-el2s.onrender.com');
     while(charts.firstChild){
       charts.removeChild(charts.firstChild);
     }
