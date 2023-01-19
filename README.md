@@ -16,3 +16,5 @@ This app allows users to easily keep track of their class schedule and visualize
 **Note:** No internet connection is required to use this app after you've loaded data once.
 
 Give it a try today!
+
+Proxy server: https://github.com/itsfuad/ProxyServer
