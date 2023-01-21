@@ -510,7 +510,12 @@ function titleCase(str) {
   </div>
   {/if}
   {#if SELECTION_PANEL}
-  <div class="selection-container">
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <div class="selection-container" on:click={(evt) => {
+    if (evt.target.classList.contains("selection-container")){
+      SELECTION_PANEL = false;
+    }
+  }}>
     <div class="form" id="selection-panel" in:fly={{ y: 50, duration: 300}}>
       <div class="title after-login">
         <i class="fa-solid fa-user"></i> {User}
@@ -592,7 +597,7 @@ function titleCase(str) {
     position: fixed;
     top: 0;
     left: 0;
-    background: rgb(13 40 58);
+    background: #0d283ac7;
     width: 100%;
     height: 100%;
     z-index: 100;
@@ -600,6 +605,7 @@ function titleCase(str) {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    backdrop-filter: blur(2px);
   }
 
   .title.after-login{
