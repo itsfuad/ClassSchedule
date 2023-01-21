@@ -578,10 +578,6 @@ function titleCase(str) {
     justify-content: center;
   }
 
-  .user{
-    font-size: 1.2rem;
-  }
-
   .sem{
     color: #10ffbd;
   }
