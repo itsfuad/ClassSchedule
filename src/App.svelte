@@ -32,7 +32,7 @@
         loadData();
       } else if(Object.keys(__DATA__).length > 0) {
         console.log("%cSemester was not choosen", "color: red;");
-        document.title = `Welcome ${User.split('[')[0]}`;
+        document.title = `Welcome ${User}`;
         LOGGED_IN = true;
         SELECTION_PANEL = true;
       }
@@ -376,9 +376,9 @@
               loadingMessage = "";
               LOGGED_IN = true;
               SELECTION_PANEL = true;
-              const user_name = titleCase(data.user).split('[');
-              const user_name_arranged = `${user_name[0].split(',')[1]} ${user_name[0].split(',')[0]}`;
-              User = `${user_name_arranged} [${user_name[1]}`;
+              const user_name = titleCase(data.user);
+              const user_name_arranged = `${user_name.split(',')[1]} ${user_name.split(',')[0]}`;
+              User = `${user_name_arranged}`;
               document.title = `Welcome ${user_name_arranged}`;
               __DATA__ = data.data;
               localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
