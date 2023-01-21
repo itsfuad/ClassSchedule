@@ -513,7 +513,9 @@ function titleCase(str) {
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div class="selection-container" on:click={(evt) => {
     if (evt.target.classList.contains("selection-container")){
-      SELECTION_PANEL = false;
+      if (charts.childNodes.length != 0){
+        SELECTION_PANEL = false;
+      }
     }
   }}>
     <div class="form" id="selection-panel" in:fly={{ y: 50, duration: 300}}>
