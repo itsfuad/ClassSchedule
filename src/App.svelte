@@ -99,7 +99,7 @@
     canvasSize = document.body.clientHeight * 0.7;
   }
 
-  const font_size = canvasResolution / 14;
+  const font_size = canvasResolution / 15;
 
   function loadData() {
     if (Object.keys(__DATA__).length == 0) {
@@ -134,10 +134,11 @@
 
     Object.keys(data).forEach((day) => {
       const canvas = document.createElement("canvas");
+      canvas.id = day;
       charts.appendChild(canvas);
       const ctx = canvas.getContext("2d");
 
-      ctx.globalCompositeOperation = "destination-over";
+      ctx.globalCompositeOperation = "source-over";
 
       canvas.height = canvasResolution;
       canvas.width = canvasResolution * 1.3;
@@ -157,7 +158,11 @@
       ctx.fill();
 
       Object.keys(data[day]).forEach(async (time) => {
-        draw(data, day, time, ctx, xCord, yCord, radius);
+        drawPie(data, day, time, ctx, xCord, yCord, radius);
+      });
+
+      Object.keys(data[day]).forEach((time) => {
+        drawLabel(data, day, time, ctx, xCord, yCord, radius);
       });
 
       //write the day name
@@ -196,7 +201,7 @@
    * @param {number} yCord
    * @param {number} radius
    */
-  function draw(data, day, time, ctx, xCord, yCord, radius) {
+  function drawPie(data, day, time, ctx, xCord, yCord, radius) {
     const courseInfo = data[day][time];
     const courseName = courseInfo['course_name'];
 
@@ -220,6 +225,23 @@
       yCord,
       radius
     );
+  }
+
+  function drawLabel(data, day, time, ctx, xCord, yCord, radius){
+    const courseInfo = data[day][time];
+    const courseName = courseInfo['course_name'];
+
+    if (!colors[courseName]) {
+      const color = chooseColor();
+      colors[courseName] = color;
+    }
+
+    let [startMinutes, endMinutes] = timeParser(time);
+      
+    // fill area between start and end time
+    const startAngle = ((startMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
+    const endAngle = ((endMinutes / 2) * Math.PI) / 180 - Math.PI / 2;
+
     writeLabel(
       courseInfo,
       time,
@@ -258,6 +280,20 @@
     ctx.fill();
   }
 
+  CanvasRenderingContext2D.prototype.fillTextCircle = function (text, x, y, radius, startAngle){
+    const numRadsPerLetter = 2*Math.PI / text.length;
+    this.save();
+    this.translate(x, y);
+    this.rotate(startAngle);
+
+    for (let i = 0; i < text.length; i++){
+      this.save();
+      this.rotate(i*numRadsPerLetter);
+      this.fillText(text[i], 0, -radius);
+      this.restore();
+    }
+  }
+
   /**
    * @param {any[]} courseName
    * @param {string} Time
@@ -281,8 +317,22 @@
     ctx.fillStyle = "#bdf";
     ctx.font = `${font_size / 2.5}px Arial`;
     ctx.textAlign = "center";
+
+    let courseName = courseInfo['course_name'];
+    if (courseName.length > 15) {
+      //short each word
+      courseName = courseName.split(' ').map((word => {
+        if (word.includes('-') || word.includes('(') || word.includes(')') || word.includes('[') || word.includes(']')) {
+          return word;
+        } else {
+          return word[0];
+        }
+      })).join('');
+      courseName = `${courseName}[${courseInfo['section']}]`;
+    }
+
     ctx.fillText(
-      `${courseInfo['course_name']} [${courseInfo['section']}]`,
+      courseName,
       xCord + radius * Math.cos((startAngle + endAngle) / 2),
       yCord + radius * Math.sin((startAngle + endAngle) / 2)
     );
@@ -290,20 +340,21 @@
       ctx.fillText(
         `Room: ${courseInfo['room']} [${courseInfo['type']}]`,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size / 2
+        yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size / 2
       );
       ctx.fillText(
         Time,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size
+        yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size
       );
     } else {
       ctx.fillText(
         Time,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
-        yCord + radius * Math.sin((startAngle + endAngle) / 2) + font_size * 2
+        yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size * 2
       );
     }
+
   }
 
   let username;
