@@ -328,8 +328,8 @@
           return word[0];
         }
       })).join('');
-      courseName = `${courseName}[${courseInfo['section']}]`;
     }
+    courseName = `${courseName}[${courseInfo['section']}]`;
 
     ctx.fillText(
       courseName,
