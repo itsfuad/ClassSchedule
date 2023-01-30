@@ -325,7 +325,13 @@
         if (word.includes('-') || word.includes('(') || word.includes(')') || word.includes('[') || word.includes(']')) {
           return word;
         } else {
-          return word[0];
+          if(word.toUpperCase() != 'TO'){
+            if(word.toUpperCase() != 'LAB'){
+              return word[0];
+            }else{
+              return ` ${word}`;
+            }
+          }
         }
       })).join('');
     }
