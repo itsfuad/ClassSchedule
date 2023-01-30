@@ -414,10 +414,6 @@
       }
 
       loadingMessage = "Authenticating...";
-
-      setTimeout(() => {
-        loadingMessage = "Fetching data...";
-      }, 2000);
       
       fetch('https://proxy-server-el2s.onrender.com', {
         method: 'POST',
