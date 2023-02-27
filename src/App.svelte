@@ -13,7 +13,6 @@
   let User = '';
   let selectedSemester;
   let loadingMessage = '';
-  let proxyServerReady = false;
 
   onMount(() => {
     console.log("%cApp mounted", "color: green;");
@@ -40,20 +39,6 @@
       console.log("%cNo data found", "color: red;");
       //change the title
       document.title = "Login";
-      fetch('https://proxy-server-el2s.onrender.com').then(res => {
-        if(res.status == 200) {
-          proxyServerReady = true;
-          if (errorText == "Proxy Server is sleeping\nWaking up...") {
-            errorText = "Proxy Server is ready";
-            errorClass = "success";
-          }
-        }
-      });
-      setTimeout(() => {
-        if (!proxyServerReady) {
-          errorText = "Proxy Server is sleeping\nWaking up...";
-        }
-      }, 3000);
     }
   });
 
@@ -407,11 +392,6 @@
     }
 
     else if(sanitizeInput(username, password)){
-      
-      if (!proxyServerReady) {
-        errorText = "Proxy Server is sleeping\nWaking up...";
-        return;
-      }
 
       loadingMessage = "Authenticating...";
       
@@ -472,17 +452,6 @@
     SELECTION_PANEL = false;
     LOGGED_IN = false;
     document.title = "Login";
-
-    proxyServerReady = false;
-    fetch('https://proxy-server-el2s.onrender.com').then(res => {
-      if(res.status == 200) {
-        proxyServerReady = true;
-        if (errorText){
-          errorText = "Ready to go!";
-          errorClass = "success";
-        }
-      }
-    });
     
     while(charts.firstChild){
       charts.removeChild(charts.firstChild);
