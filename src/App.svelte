@@ -117,9 +117,17 @@
       }
     }
 
+    const today = new Date().toLocaleString("en-us", { weekday: "long" });
+
     Object.keys(data).forEach((day) => {
+
       const canvas = document.createElement("canvas");
       canvas.id = day;
+      if (day == today) {
+        canvas.style.border = "3px solid deepskyblue";
+      }else{
+        canvas.style.border = "3px solid #00000000";
+      }
       charts.appendChild(canvas);
       const ctx = canvas.getContext("2d");
 
