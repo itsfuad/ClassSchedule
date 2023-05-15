@@ -48,9 +48,7 @@
         }, errorHandler);
       }, errorHandler);
     }, errorHandler);
-  }).then(()=>{
-    console.log("Done");
-  })
+  });
 
   function errorHandler(e){
     console.log(e);
