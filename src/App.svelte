@@ -460,9 +460,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Access-Control-Allow-Origin': '*', // Required for CORS support to work'
         },
-        credentials: 'include',
         body: `UserName=${username}&Password=${password}`,
       })
         .then((r) => {
