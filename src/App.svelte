@@ -17,42 +17,30 @@
   onMount(() => {
     console.log("%cApp mounted", "color: green;");
 
-    /*
     const dataAvailable = localStorage.getItem("data")?.split('|');
     const sm = localStorage.getItem("sm");
-    */
-
-    let dataAvailable, sm;
-    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.PERSISTENT, 1024 * 1024, function (fs) {
-      fs.root.getFile('data', {}, function (fileEntry) {
-        fileEntry.file(function (file) {
-          var reader = new FileReader();
-          reader.onloadend = function(e) {
-            dataAvailable = this.result.split('|');
-            console.log('Data Read completed.');
-            console.log(dataAvailable);
-          };
-          reader.readAsText(file);
-        }, errorHandler);
-      }, errorHandler);
-      fs.root.getFile('sm', {}, function (fileEntry) {
-        fileEntry.file(function (file) {
-          var reader = new FileReader();
-          reader.onloadend = function(e) {
-            sm = this.result;
-            console.log('Sm Read completed.');
-            console.log(sm);
-          };
-          reader.readAsText(file);
-        }, errorHandler);
-      }, errorHandler);
-    }, errorHandler);
+    
+    if (dataAvailable) {
+      User = titleCase(atob(dataAvailable[1]));
+      __DATA__ = JSON.parse(atob(dataAvailable[0]));
+      if (Object.keys(__DATA__).length > 0 && sm != 'null' && sm != '' && sm != null) {
+        console.log("%cData loaded", "color: deepskyblue;");
+        LOGGED_IN = true;
+        SELECTION_PANEL = false;
+        selectedSemester = atob(sm);
+        loadData();
+      } else if(Object.keys(__DATA__).length > 0) {
+        console.log("%cSemester was not choosen", "color: red;");
+        document.title = `Welcome ${User}`;
+        LOGGED_IN = true;
+        SELECTION_PANEL = true;
+      }
+    } else {
+      console.log("%cNo data found", "color: red;");
+      //change the title
+      document.title = "Login";
+    }
   });
-
-  function errorHandler(e){
-    console.log(e);
-  }
 
   /**
    * @param {string} timeRange
@@ -104,28 +92,10 @@
       return;
     }
 
-    /*
     if (!localStorage.getItem("data")) {
       localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
       console.log("%cData Updated", "color: limegreen;");
     }
-    */
-
-    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.PERSISTENT, 1024 * 1024, function (fs) {
-      fs.root.getFile('data', {create: true}, function (fileEntry) {
-        fileEntry.createWriter(function (fileWriter) {
-          fileWriter.onwriteend = function(e) {
-            console.log('Write completed.');
-          };
-          fileWriter.onerror = function(e) {
-            console.log('Write failed: ' + e.toString());
-          };
-          var blob = new Blob([btoa(JSON.stringify(__DATA__)) + '|' + btoa(User)], {type: 'text/plain'});
-          fileWriter.write(blob);
-        }, errorHandler);
-      }, errorHandler);
-    }, errorHandler);
 
     document.title = "Your Schedule";
 
@@ -136,25 +106,7 @@
 
   function init() {
     console.log("%cInitializing Charts", "color: deepskyblue;");
-
-    //localStorage.setItem("sm", btoa(selectedSemester)); Use filesystem API instead
-    
-    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.PERSISTENT, 1024 * 1024, function (fs) {
-      fs.root.getFile('sm', {create: true}, function (fileEntry) {
-        fileEntry.createWriter(function (fileWriter) {
-          fileWriter.onwriteend = function(e) {
-            console.log('Write completed.');
-          };
-          fileWriter.onerror = function(e) {
-            console.log('Write failed: ' + e.toString());
-          };
-          var blob = new Blob([btoa(selectedSemester)], {type: 'text/plain'});
-          fileWriter.write(blob);
-        }, errorHandler);
-      }, errorHandler);
-    }, errorHandler);
-
+    localStorage.setItem("sm", btoa(selectedSemester));
     //sort data by day sunday - wednesday
     const data = {};
     charts.innerHTML = '';
@@ -355,7 +307,6 @@
     yCord,
     radius
   ) {
-
     ctx.fillStyle = "#bdf";
     ctx.font = `${font_size / 2.5}px Arial`;
     ctx.textAlign = "center";
@@ -384,29 +335,25 @@
       xCord + radius * Math.cos((startAngle + endAngle) / 2),
       yCord + radius * Math.sin((startAngle + endAngle) / 2)
     );
-
     if (courseInfo) {
       ctx.fillText(
         `Room: ${courseInfo['room']} [${courseInfo['type']}]`,
         xCord + radius * Math.cos((startAngle + endAngle) / 2),
         yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size / 2
       );
+      ctx.fillText(
+        Time,
+        xCord + radius * Math.cos((startAngle + endAngle) / 2),
+        yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size
+      );
+    } else {
+      ctx.fillText(
+        Time,
+        xCord + radius * Math.cos((startAngle + endAngle) / 2),
+        yCord + radius * Math.sin((startAngle + endAngle) / 2)  + font_size * 2
+      );
     }
 
-    const timeStart = Time.split('-')[0];
-    const timeEnd = Time.split('-')[1];
-
-    ctx.fillText(
-      timeStart,
-      xCord + radius * Math.cos(startAngle),
-      yCord + radius * Math.sin(startAngle)
-    );
-
-    ctx.fillText(
-      timeEnd,
-      xCord + radius * Math.cos(endAngle),
-      yCord + radius * Math.sin(endAngle)
-    );
   }
 
   let username;
@@ -474,23 +421,7 @@
               User = `${user_name_arranged}`;
               document.title = `Welcome ${user_name_arranged}`;
               __DATA__ = data.data;
-              //localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
-              window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-              window.requestFileSystem(window.PERSISTENT, 1024 * 1024, function (fs) {
-                fs.root.getFile('data', { create: true }, function (fileEntry) {
-                  fileEntry.createWriter(function (fileWriter) {
-                    fileWriter.onwriteend = function (e) {
-                      console.log('Write completed.');
-                    };
-                    fileWriter.onerror = function (e) {
-                      console.log('Write failed: ' + e.toString());
-                    };
-                    const blob = new Blob([JSON.stringify(__DATA__)], { type: 'text/plain' });
-                    fileWriter.write(blob);
-                  }, errorHandler);
-                }, errorHandler);
-              }, errorHandler);
-
+              localStorage.setItem("data", btoa(JSON.stringify(__DATA__)) + '|' + btoa(User));
               username = '';
               password = '';
               errorText = '';
@@ -521,18 +452,8 @@
   }
 
   function clear(){
-    //localStorage.removeItem("sm");
-    //localStorage.removeItem("data");
-
-    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.PERSISTENT, 1024 * 1024, function (fs) {
-      fs.root.getFile('data', { create: false }, function (fileEntry) {
-        fileEntry.remove(function () {
-          console.log('File removed.');
-        }, errorHandler);
-      }, errorHandler);
-    }, errorHandler);
-
+    localStorage.removeItem("sm");
+    localStorage.removeItem("data");
     User = '';
     __DATA__ = {};
     SELECTION_PANEL = false;
