@@ -403,12 +403,11 @@
 
       loadingMessage = "Authenticating...";
       
-      fetch('https://proxy-server-el2s.onrender.com', {
+      fetch('https://proxyserver.itsfuad.repl.co', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         },
-        credentials: 'include',
         body: `UserName=${username}&Password=${password}`,
       })
         .then((r) => {
