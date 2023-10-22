@@ -403,7 +403,7 @@
 
       loadingMessage = "Authenticating...";
       
-      fetch('https://proxyserver.itsfuad.repl.co', {
+      fetch('https://course-visualizer-proxy-server.onrender.com/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
